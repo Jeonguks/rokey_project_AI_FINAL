@@ -27,14 +27,59 @@ model = YOLO(YOLO_MODEL_PATH)
 
 # Camera workers
 workers = {
-    "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model),
-    "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model),
-    "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model),
+    "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model, conf_thres = YOLO_CONF_THRES),
+    "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model, conf_thres = YOLO_CONF_THRES),
+    "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model, conf_thres = YOLO_CONF_THRES),
+}
+
+# label별 마지막 print 시간
+LAST_PRINT_TS = {
+    "fire": 0.0,
+    "stand": 0.0,
+    "down": 0.0,
+}
+
+# label별 print 주기 (초)
+PRINT_INTERVAL_SEC = {
+    "fire": 2.0,
+    "stand": 5.0,
+    "down": 1.0,
 }
 
 # 디텍션시 사용할 콜백 함수
+# def on_detect(ev):
+#     print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
+"""
+ev 예시:
+{
+    "ts": 1690000000.123,
+    "camera": "cam2",
+    "type": "detected",
+    "label": "fire",   # fire / stand / down
+    ...
+}
+"""
 def on_detect(ev):
-    print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
+
+    label = ev.get("label")
+    now = time.time()
+
+    if label not in PRINT_INTERVAL_SEC:
+        return
+
+    last_ts = LAST_PRINT_TS.get(label, 0.0)
+    interval = PRINT_INTERVAL_SEC[label]
+
+    if (now - last_ts) < interval:
+        return  # 아직 출력할 타이밍 아님
+
+    # 업데이트
+    LAST_PRINT_TS[label] = now
+
+    print(
+        f"[DETECT] label={label} | camera={ev.get('camera')} | "
+        f"ts={time.strftime('%H:%M:%S', time.localtime(now))}"
+    )
 
 # 캠 워커 활성화
 for w in workers.values():

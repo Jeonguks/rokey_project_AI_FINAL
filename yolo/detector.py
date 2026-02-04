@@ -15,8 +15,6 @@ DETECT_DEBOUNCE_SEC = {
 }
 
 
-
-
 class EventBus:
     def __init__(self):
         self._cond = threading.Condition()
@@ -175,8 +173,6 @@ class CameraWorker:
 
             # ---- 여기서 "콜백 트리거 조건"을 정하면 됨 ----
             # 예: car가 감지되면 1초 디바운스 후 이벤트 발행
-            now = time.time()
-
             now = time.time()
 
             for d in dets:
