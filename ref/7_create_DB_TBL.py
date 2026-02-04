@@ -11,7 +11,7 @@ create_detection_table = """
 CREATE TABLE IF NOT EXISTS detection_table (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL
-);
+); 
 """
 # SQL command to create the table
 create_violation_table = """
