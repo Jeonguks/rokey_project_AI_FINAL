@@ -4,11 +4,26 @@ import time
 import cv2
 import numpy as np
 
+# 감지 대상 클래스 정의
+DETECT_LABELS = {"fire", "stand", "down"}
+
+# 클래스별 디바운스(초)
+DETECT_DEBOUNCE_SEC = {
+    "fire": 1.0,
+    "stand": 1.0,
+    "down": 1.0,
+}
+
+
+
+
 class EventBus:
     def __init__(self):
         self._cond = threading.Condition()
         self._events = []  # list[dict]
         self._max = 200
+        self._last_event_ts = {}  # label -> timestamp
+
 
     def publish(self, ev: dict):
         with self._cond:
@@ -53,7 +68,7 @@ class CameraWorker:
         self.thread = None
 
         # 이벤트 중복 방지용 (예: car 검출 연속 알림 스팸 방지)
-        self._last_fire_ts = 0.0
+        self._last_event_ts = {}
 
     def register_callback(self, fn):
         """fn(ev_dict) 형태 콜백 등록"""
@@ -161,21 +176,33 @@ class CameraWorker:
             # ---- 여기서 "콜백 트리거 조건"을 정하면 됨 ----
             # 예: car가 감지되면 1초 디바운스 후 이벤트 발행
             now = time.time()
-            # 0 fire
-            # 1 stand
-            # 2 down
-            
 
-            has_car = any(d["label"] == "stand" for d in dets)
-            if has_car and (now - self._last_fire_ts) >= 1.0:
-                self._last_fire_ts = now
+            now = time.time()
+
+            for d in dets:
+                label = d["label"]
+
+                if label not in DETECT_LABELS:
+                    continue
+
+                last_ts = self._last_event_ts.get(label, 0.0)
+                debounce = DETECT_DEBOUNCE_SEC.get(label, 1.0)
+
+                if (now - last_ts) < debounce:
+                    continue
+
+                # 업데이트
+                self._last_event_ts[label] = now
+
                 ev = {
                     "ts": now,
                     "camera": self.camera_key,
                     "type": "detected",
-                    "label": "stand",
-                    "objects": dets,  # 필요하면 전체 넣고, 아니면 car만 필터링
+                    "label": label,            # fire / stand / down
+                    "object": d,               # 해당 객체 1개
+                    "objects": dets,           # 필요하면 전체
                 }
+
                 self._emit(ev)
 
         cap.release()

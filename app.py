@@ -14,6 +14,7 @@ import time
 
 
 
+
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
@@ -26,14 +27,14 @@ model = YOLO(YOLO_MODEL_PATH)
 
 # Camera workers
 workers = {
-    # "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model),
+    "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model),
     "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model),
-    # "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model),
+    "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model),
 }
 
 # 디텍션시 사용할 콜백 함수
 def on_detect(ev):
-    print("[CALLBACK]", ev)
+    print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
 
 # 캠 워커 활성화
 for w in workers.values():
