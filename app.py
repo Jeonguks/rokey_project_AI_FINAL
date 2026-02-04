@@ -1,24 +1,73 @@
+from config import *
+from yolo.detector import CameraWorker, event_bus
+
+from ultralytics import YOLO
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify, abort
+
 import random
 import cv2
 import numpy as np
 import atexit
 import random
 import sqlite3
+import time
+
 
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key"
+app.secret_key = SECRET_KEY
 
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
 
+# YOLO 모델 로드
+model = YOLO(YOLO_MODEL_PATH)
 
-# CAM0 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:6:1.0-video-index0" #-> ../../video0 내장 카메라
-CAM1 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:1:1.0-video-index0" #-> ../../video7 1번포트
-CAM2 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:3:1.0-video-index0" #-> ../../video3 2번 포트
-CAM3 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:2:1.0-video-index0" #-> ../../video5 3번 포트
+# Camera workers
+workers = {
+    # "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model),
+    "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model),
+    # "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model),
+}
+
+# 디텍션시 사용할 콜백 함수
+def on_detect(ev):
+    print("[CALLBACK]", ev)
+
+# 캠 워커 활성화
+for w in workers.values():
+    w.register_callback(on_detect)
+    w.start()
+
+# 영상 전송 루프: Flask가 브라우저에게 MJPEG 스트림을 보내기 위해 쓰는 generator
+# CameraWorker는 계속 latest_jpeg를 최신으로 갈아끼움
+# mjpeg()는 그 latest_jpeg를 계속 읽어서 브라우저에 보내기만 함
+def mjpeg(worker):
+    print(f"[MJPEG] generator start for {worker}")
+
+    while True:
+        jpg = None
+
+        if hasattr(worker, "latest_jpeg"):
+            jpg = worker.latest_jpeg
+            
+        if jpg:
+            print("[MJPEG] sending frame (bytes =", len(jpg), ")")
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" +
+                jpg +
+                b"\r\n"
+            )
+        else:
+            print("[MJPEG] no frame yet")
+
+        time.sleep(0.5)  # 로그 확인용으로 일부러 느리게
+
+@app.route("/events")
+def events():
+    return Response(event_bus.stream(), mimetype="text/event-stream")
 
 # ----------------------------
 # Helpers
@@ -128,15 +177,16 @@ def generate_frames_box(camera_path: int):
 
 @app.route("/video_feed1")
 def video_feed1():
-    return Response(generate_frames_box(CAM1), mimetype="multipart/x-mixed-replace; boundary=frame")
+    return Response(mjpeg(workers["cam1"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/video_feed2")
 def video_feed2():
-    return Response(generate_frames_box(CAM2), mimetype="multipart/x-mixed-replace; boundary=frame")
+    print("[ROUTE] /video_feed2 called")
+    return Response(mjpeg(workers["cam2"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/video_feed3")
 def video_feed3():
-    return Response(generate_frames_box(CAM3), mimetype="multipart/x-mixed-replace; boundary=frame")
+    return Response(mjpeg(workers["cam3"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
 # JS로 주기 호출 추가

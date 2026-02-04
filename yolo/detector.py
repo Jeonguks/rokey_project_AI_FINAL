@@ -17,7 +17,7 @@ class EventBus:
                 self._events = self._events[-self._max:]
             self._cond.notify_all()
 
-    def sse_stream(self, last_idx: int = 0):
+    def stream(self, last_idx: int = 0):
         """
         SSE generator. client마다 last_idx를 따로 유지할 수도 있는데,
         간단히 '현재 시점부터' 받게 하려면 last_idx = len(self._events)로 시작하면 됨.
@@ -45,43 +45,45 @@ class CameraWorker:
         self.imgsz = imgsz
 
         self._lock = threading.Lock()
-        self._latest_jpeg = None
-        self._latest_meta = {"ts": 0, "objects": []}
+        self.latest_jpeg = None
+        self.latest_meta = {"ts": 0, "objects": []}
 
-        self._callbacks = []  # list[callable]
-        self._stop = threading.Event()
-        self._thread = None
+        self.callbacks = []  # list[callable]
+        self.stop = threading.Event()
+        self.thread = None
 
         # 이벤트 중복 방지용 (예: car 검출 연속 알림 스팸 방지)
         self._last_fire_ts = 0.0
 
     def register_callback(self, fn):
         """fn(ev_dict) 형태 콜백 등록"""
-        self._callbacks.append(fn)
+        self.callbacks.append(fn)
 
     def start(self):
-        if self._thread and self._thread.is_alive():
+        print(f"[cam] start() called")
+
+        if self.thread and self.thread.is_alive():
             return
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
+        self.stop.clear()
+        self.thread = threading.Thread(target=self._loop, daemon=True)
+        self.thread.start()
 
     def stop(self):
-        self._stop.set()
-        if self._thread:
-            self._thread.join(timeout=2.0)
+        self.stop.set()
+        if self.thread:
+            self.thread.join(timeout=2.0)
 
     def get_latest_jpeg(self):
         with self._lock:
-            return self._latest_jpeg
+            return self.latest_jpeg
 
     def get_latest_meta(self):
         with self._lock:
-            return dict(self._latest_meta)
+            return dict(self.latest_meta)
 
     def _emit(self, ev: dict):
         # 1) 파이썬 콜백
-        for cb in self._callbacks:
+        for cb in self.callbacks:
             try:
                 cb(ev)
             except Exception as e:
@@ -120,16 +122,22 @@ class CameraWorker:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
     def _loop(self):
+        print(f"[cam] worker loop started, camera_path={self.camera_path}")
+
         cap = cv2.VideoCapture(self.camera_path, cv2.CAP_V4L2)
         if not cap.isOpened():
-            print(f"[{self.camera_key}] camera open failed: {self.camera_path}")
+            print(f"[cam] camera open failed: {self.camera_path}")
             return
 
-        while not self._stop.is_set():
+        while not self.stop.is_set():
             ok, frame = cap.read()
             if not ok:
+                print(f"[{self.camera_key}] cap.read() failed")
                 time.sleep(0.05)
                 continue
+
+            print(f"[cam] frame ok shape={frame.shape}")
+
 
             dets = self._run_yolo(frame)
             self._draw(frame, dets)
@@ -137,22 +145,35 @@ class CameraWorker:
             # 최신 메타 업데이트
             meta = {"ts": time.time(), "objects": dets}
             ret, buf = cv2.imencode(".jpg", frame)
+
+
             if ret:
                 with self._lock:
-                    self._latest_jpeg = buf.tobytes()
-                    self._latest_meta = meta
+                    self.latest_jpeg = buf.tobytes()
+                    self.latest_meta = meta
+                    print(f"['cam] latest_jpeg updated size={len(self.latest_jpeg)}")
+
+            else:
+                print(f"[{self.cam_key}] cv2.imencode failed")
+                time.sleep(0.01)
+                continue
 
             # ---- 여기서 "콜백 트리거 조건"을 정하면 됨 ----
             # 예: car가 감지되면 1초 디바운스 후 이벤트 발행
             now = time.time()
-            has_car = any(d["label"] == "car" for d in dets)
+            # 0 fire
+            # 1 stand
+            # 2 down
+            
+
+            has_car = any(d["label"] == "stand" for d in dets)
             if has_car and (now - self._last_fire_ts) >= 1.0:
                 self._last_fire_ts = now
                 ev = {
                     "ts": now,
                     "camera": self.camera_key,
                     "type": "detected",
-                    "label": "car",
+                    "label": "stand",
                     "objects": dets,  # 필요하면 전체 넣고, 아니면 car만 필터링
                 }
                 self._emit(ev)

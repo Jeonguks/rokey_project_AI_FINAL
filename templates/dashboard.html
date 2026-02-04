@@ -284,7 +284,8 @@
       <!-- Camera 1 -->
       <div class="video-card">
         <div class="video-stage">
-          <img src="{{ url_for('video_feed1') }}" alt="Camera 1">
+          <img src="/video_feed1">
+          <!-- <img src="{{ url_for('video_feed1') }}" alt="Camera 1"> -->
         </div>
         <div class="camera-label">Camera 1</div>
       </div>
@@ -292,7 +293,8 @@
       <!-- Camera 2 -->
       <div class="video-card">
         <div class="video-stage">
-          <img src="{{ url_for('video_feed2') }}" alt="Camera 2">
+          <img src="/video_feed2">
+          <!-- <img src="{{ url_for('video_feed2') }}" alt="Camera 2"> -->
         </div>
         <div class="camera-label">Camera 2</div>
       </div>
@@ -300,7 +302,8 @@
       <!-- Camera 3 -->
       <div class="video-card">
         <div class="video-stage">
-            <img src="{{ url_for('video_feed3') }}" alt="Camera 3">
+          <img src="/video_feed3">
+          <!-- <img src="{{ url_for('video_feed3') }}" alt="Camera 3"> -->
         </div>
         <div class="camera-label">Camera 3</div>
       </div>
@@ -401,7 +404,22 @@
 
   </main>
 
+  
+  <div id="snackbar" style="
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: none;
+    z-index: 9999;
+    font-size: 14px;">
+  </div>
+
 </body>
+<script src="{{ url_for('static', filename='js/events.js') }}"></script>
 
 <script>
   function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }
