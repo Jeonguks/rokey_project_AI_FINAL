@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+
+  <style>
+    /* ===============================
+       Global
+    =============================== */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      color: #111;
+    }
+
+    /* ===============================
+       Header
+    =============================== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+      padding: 0 24px;
+      background-color: #1f2933;
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .header-left {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .logout-link {
+      padding: 6px 14px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .logout-link:hover { background-color: #45a049; }
+
+    /* ===============================
+       Video (Top)
+       - 라벨 하단 고정: 카드 높이 고정 + column flex
+    =============================== */
+    .top-video-wrapper {
+      width: 100%;
+      background-color: #111;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .video-container {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    /* ✅ 고정 높이: 라벨 위치 안정화 */
+    .video-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #000;
+      min-width: 0;
+      height: 280px; /* 필요시 320/360 등으로 조정 */
+    }
+
+    /* 영상 영역(있으면 img, 없으면 placeholder) */
+    .video-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      min-height: 0;
+    }
+
+    .video-stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 꽉 채우기 */
+      display: block;
+    }
+
+    /* ✅ Camera가 없을 때도 라벨은 하단 유지 */
+    .video-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      font-size: 14px;
+      background: #000;
+    }
+
+    .camera-label {
+      height: 36px;              /* ✅ 라벨 높이 고정 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      font-size: 14px;
+      background-color: #1f2933;
+      color: #fff;
+      flex: 0 0 auto;
+    }
+
+    /* ===============================
+       Layout: Middle + Bottom
+    =============================== */
+    .page {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+  
+    /* Middle section */
+    .middle {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      padding: 16px;
+    }
+
+    .card-title {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .subtle {
+      font-size: 12px;
+      color: #6b7280;
+      margin-left: 8px;
+      font-weight: 500;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px;
+      font-size: 14px;
+      align-items: start;
+    }
+
+    .kv .k {
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .pill.red   { background: #fee2e2; color: #991b1b; }
+    .pill.green { background: #dcfce7; color: #166534; }
+    .pill.amber { background: #fef3c7; color: #92400e; }
+
+    .dispatch {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      height: 100%;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover { filter: brightness(0.95); }
+
+    .btn-outline {
+      background: white;
+      border: 1px solid #d1d5db;
+      color: #111;
+    }
+    .btn-outline:hover { background: #f9fafb; }
+
+    /* Bottom section: robot statuses */
+    .bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .robot-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .progress {
+      width: 60%;
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0%; /* 배터리 값에 따라 변경 */
+      background: #22c55e;
+    }
+
+    .muted {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .video-container { flex-direction: column; }
+      .video-card { height: 260px; }
+      .middle { grid-template-columns: 1fr; }
+      .bottom { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">My Dashboard</div>
+    <div class="header-right">
+      <span>👤 {{ username }}</span>
+      <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+    </div>
+  </header>
+
+  <!-- Top: Videos -->
+  <section class="top-video-wrapper">
+    <div class="video-container">
+
+      <!-- Camera 1 -->
+      <div class="video-card">
+        <div class="video-stage">
+          <img src="{{ url_for('video_feed1') }}" alt="Camera 1">
+        </div>
+        <div class="camera-label">Camera 1</div>
+      </div>
+
+      <!-- Camera 2 -->
+      <div class="video-card">
+        <div class="video-stage">
+          <img src="{{ url_for('video_feed2') }}" alt="Camera 2">
+        </div>
+        <div class="camera-label">Camera 2</div>
+      </div>
+
+      <!-- Camera 3 -->
+      <div class="video-card">
+        <div class="video-stage">
+            <img src="{{ url_for('video_feed3') }}" alt="Camera 3">
+        </div>
+        <div class="camera-label">Camera 3</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Middle + Bottom -->
+  <main class="page">
+
+    <!-- ===============================
+         중간: 상황 + 로봇 출동 버튼
+    =============================== -->
+    <section class="middle">
+
+      <!-- 상황 발생 카드 -->
+      <div class="card ">
+        <div class="card-title">
+          상황 발생 <span class="subtle"></span>
+        </div>
+
+        <div class="kv">
+          <div class="k">좌표</div>
+          <div class="v">{{ incident_coord | default("N/A (예: x=12.3, y=4.5)") }}</div>
+
+          <div class="k">현재 상황</div>
+          <div class="v">
+            <!-- 예: 화재 진압중 / 진압 완료 / 사람 디텍션 -->
+            <span class="pill amber">{{ incident_status | default("사람 디텍션") }}</span>
+          </div>
+
+          <div class="k">세부</div>
+          <div class="v">{{ incident_detail | default("예: 화재 발생 지점 접근 중 / 연기 감지") }}</div>
+
+        </div>
+      </div>
+
+      <!-- 로봇 출동 카드 -->
+      <div class="card ">
+        <div class="card-title">
+          로봇 출동 <span class="subtle"></span>
+        </div>
+
+        <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
+        <form method="POST" action="{{ url_for('dispatch_robot') }}">
+          <button class="btn btn-primary" type="submit">로봇 출동</button>
+        </form> -->
+      </div>
+
+    </section>
+
+    <!-- ===============================
+         하단: 로봇 상태 A/B
+    =============================== -->
+    <section class="bottom">
+
+      <!-- 로봇A -->
+      <div class="card ">
+        <div class="card-title">로봇A 상태</div>
+
+        <div class="robot-row">
+          <div><strong>배터리</strong></div>
+          <div style="display:flex; align-items:center; gap:10px; width:70%;">
+            <div class="progress">
+              <div style="width: {{ robotB_battery}}%"></div>
+            </div>
+
+
+
+            <div style="min-width:52px; text-align:right;">
+              {{ robotA_battery | default(0) }}%
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 로봇B -->
+      <div class="card ">
+        <div class="card-title">로봇B 상태</div>
+
+        <div class="robot-row">
+          <div><strong>배터리</strong></div>
+          <div style="display:flex; align-items:center; gap:10px; width:70%;">
+            <div class="progress">
+                <div style="width: {{ robotB_battery}}%"></div>
+            </div>
+
+            <div style="min-width:52px; text-align:right;">
+              {{ robotB_battery | default(0)}}%
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</body>
+
+<script>
+  function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }
+
+  async function refreshStatus(){
+
+    console.log('eaaergaergaerg')
+    try{
+      const res = await fetch("/api/status", {cache:"no-store"});
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const a = clamp(data.robotA_battery);
+      const b = clamp(data.robotB_battery);
+
+      document.getElementById("robotA_bar").style.width = a + "%";
+      document.getElementById("robotA_text").textContent = a + "%";
+
+      document.getElementById("robotB_bar").style.width = b + "%";
+      document.getElementById("robotB_text").textContent = b + "%";
+
+      // 선택: 배터리 색 자동 변경
+      document.getElementById("robotA_bar").style.background = (a <= 20) ? "#ef4444" : "#22c55e";
+      document.getElementById("robotB_bar").style.background = (b <= 20) ? "#ef4444" : "#f59e0b";
+
+    }catch(e){}
+  }
+
+  refreshStatus(); // 첫 로드 즉시 갱신
+  setInterval(refreshStatus, 2000); // 2초마다 갱신
+</script>
+
+</html>
