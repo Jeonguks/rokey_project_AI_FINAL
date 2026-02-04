@@ -1,5 +1,8 @@
 from config import *
 from yolo.detector import CameraWorker, event_bus
+from audio.AudioPlayer  import AudioPlayer, get_mp3_duration_sec
+from audio.FireLoopPlayer  import FireLoopPlayer 
+
 
 from ultralytics import YOLO
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify, abort
@@ -14,6 +17,8 @@ import time
 
 
 
+# mp3 초 구하는 유틸
+
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -21,6 +26,23 @@ app.secret_key = SECRET_KEY
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+
+
+# 화재 경보음
+audio_player = AudioPlayer()
+fire_duration = get_mp3_duration_sec(FIRE_ALARM_PATH)
+
+fire_loop = FireLoopPlayer(
+    audio_player=audio_player,
+    mp3_path=FIRE_ALARM_PATH,
+    duration_sec=fire_duration,
+    fire_hold_sec=1.5,   # fire 이벤트가 1.5초 이상 안 들어오면 "fire 종료"로 봄
+)
+
+fire_loop.start()
+
+
+
 
 # YOLO 모델 로드
 model = YOLO(YOLO_MODEL_PATH)
@@ -32,19 +54,6 @@ workers = {
     "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model, conf_thres = YOLO_CONF_THRES),
 }
 
-# label별 마지막 print 시간
-LAST_PRINT_TS = {
-    "fire": 0.0,
-    "stand": 0.0,
-    "down": 0.0,
-}
-
-# label별 print 주기 (초)
-PRINT_INTERVAL_SEC = {
-    "fire": 2.0,
-    "stand": 5.0,
-    "down": 1.0,
-}
 
 # 디텍션시 사용할 콜백 함수
 # def on_detect(ev):
@@ -60,26 +69,12 @@ ev 예시:
 }
 """
 def on_detect(ev):
-
+    print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
     label = ev.get("label")
-    now = time.time()
+    if label == "fire":
+        fire_loop.notify_fire()
 
-    if label not in PRINT_INTERVAL_SEC:
-        return
-
-    last_ts = LAST_PRINT_TS.get(label, 0.0)
-    interval = PRINT_INTERVAL_SEC[label]
-
-    if (now - last_ts) < interval:
-        return  # 아직 출력할 타이밍 아님
-
-    # 업데이트
-    LAST_PRINT_TS[label] = now
-
-    print(
-        f"[DETECT] label={label} | camera={ev.get('camera')} | "
-        f"ts={time.strftime('%H:%M:%S', time.localtime(now))}"
-    )
+  
 
 # 캠 워커 활성화
 for w in workers.values():
@@ -253,6 +248,12 @@ def dispatch_robot():
     # todo 출동 요청 구현
     return
 
+
+@app.route("/api/alarm/stop", methods=["POST"])
+def api_alarm_stop():
+    # 10초동안 재감지 무시 (원하면 값 조절)
+    fire_loop.stop_alarm(silence_sec=5)
+    return jsonify({"ok": True})
 
 
 # ----------------------------

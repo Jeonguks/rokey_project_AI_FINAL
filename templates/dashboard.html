@@ -347,6 +347,9 @@
           로봇 출동 <span class="subtle"></span>
         </div>
 
+        <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
+
+
         <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
         <form method="POST" action="{{ url_for('dispatch_robot') }}">
           <button class="btn btn-primary" type="submit">로봇 출동</button>
@@ -420,6 +423,19 @@
 
 </body>
 <script src="{{ url_for('static', filename='js/events.js') }}"></script>
+
+
+<script>
+  async function stopAlarm(){
+    try{
+      const res = await fetch("/api/alarm/stop", {method:"POST"});
+      if(res.ok){
+        // 필요하면 토스트/스낵바 표시
+        console.log("alarm stopped");
+      }
+    }catch(e){}
+  }
+</script>
 
 <script>
   function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }

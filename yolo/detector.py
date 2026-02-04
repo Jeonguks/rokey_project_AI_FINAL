@@ -11,7 +11,7 @@ DETECT_LABELS = {"fire", "stand", "down"}
 DETECT_DEBOUNCE_SEC = {
     "fire": 1.0,
     "stand": 1.0,
-    "down": 1.0,
+    "down": 1.0
 }
 
 
