@@ -10,6 +10,6 @@ CAM3 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:2:1.0-video-index0" #-> ../../vi
 
 # YOLO
 # YOLO_MODEL_PATH = "/home/rokey/rokey_ws/src/web_cam_detect/best.pt"
-YOLO_MODEL_PATH = "/home/rokey/best_webcam_v8n.pt"
+YOLO_MODEL_PATH = "res/best_webcam_v8n.pt"
 YOLO_CONF_THRES = 0.3
 YOLO_IMG_SZ = 640
