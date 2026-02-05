@@ -19,6 +19,8 @@ import time
 import ros_tb4_bridge
 
 
+from threading import Lock
+
 
 
 app = Flask(__name__)
@@ -28,6 +30,50 @@ app.secret_key = SECRET_KEY
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+# 페이지 전환시 카메라 안돌게 
+workers_lock = Lock()
+cameras_enabled = False
+
+@app.post("/api/cameras/start")
+def api_cameras_start():
+    start_cameras()
+    return jsonify({"ok": True, "cameras_enabled": True})
+
+@app.post("/api/cameras/stop")
+def api_cameras_stop():
+    stop_cameras()
+    return jsonify({"ok": True, "cameras_enabled": False})
+
+@app.get("/api/cameras/status")
+def api_cameras_status():
+    return jsonify({"ok": True, "cameras_enabled": cameras_enabled})
+
+
+def start_cameras():
+    global cameras_enabled
+    with workers_lock:
+        if cameras_enabled:
+            return
+        for w in workers.values():
+            w.start()
+        cameras_enabled = True
+        print("[CAM] started")
+
+def stop_cameras():
+    global cameras_enabled
+    with workers_lock:
+        if not cameras_enabled:
+            return
+        for w in workers.values():
+            try:
+                w.stop()
+            except Exception as e:
+                print("[CAM] stop error:", e)
+        cameras_enabled = False
+        print("[CAM] stopped")
+
+
+
 
 
 # ros2 토픽 리시브
@@ -54,6 +100,8 @@ def tb4_page():
 def robot_display():
     if "username" not in session:
         return redirect(url_for("login"))
+    
+    stop_cameras()
     return render_template("robot_display.html", username=session["username"])
 
 
@@ -106,35 +154,32 @@ def on_detect(ev):
 
   
 
-# 캠 워커 활성화
+# 캠 워커 활성화 > 
 for w in workers.values():
     w.register_callback(on_detect)
-    w.start()
+    # w.start() # 제어형으로 바뀌면서 사용 안함
 
 # 영상 전송 루프: Flask가 브라우저에게 MJPEG 스트림을 보내기 위해 쓰는 generator
 # CameraWorker는 계속 latest_jpeg를 최신으로 갈아끼움
 # mjpeg()는 그 latest_jpeg를 계속 읽어서 브라우저에 보내기만 함
 def mjpeg(worker):
-    print(f"[MJPEG] generator start for {worker}")
-
+    # 카메라가 꺼지면 연결을 끊어버림(루프 종료)
     while True:
-        jpg = None
+        if not cameras_enabled:
+            # 204로 끝내는 대신 generator 종료 -> 브라우저 연결 닫힘
+            return
 
-        if hasattr(worker, "latest_jpeg"):
-            jpg = worker.latest_jpeg
-            
+        jpg = worker.get_latest_jpeg() if hasattr(worker, "get_latest_jpeg") else getattr(worker, "latest_jpeg", None)
+
         if jpg:
-            print("[MJPEG] sending frame (bytes =", len(jpg), ")")
             yield (
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" +
                 jpg +
                 b"\r\n"
             )
-        else:
-            print("[MJPEG] no frame yet")
-
-        time.sleep(0.5)  # 로그 확인용으로 일부러 느리게
+        # 프레임 없을 때는 조용히 대기 (로그 X)
+        time.sleep(0.1)
 
 @app.route("/events")
 def events():
@@ -186,6 +231,8 @@ def login():
 def dashboard():
     if "username" not in session:
         return redirect(url_for("login"))
+    
+    start_cameras() 
 
     # todo 로봇에서 데이터 연동 필요
     robotA_battery = clamp_percent(0, 0)
@@ -248,15 +295,20 @@ def generate_frames_box(camera_path: int):
 
 @app.route("/video_feed1")
 def video_feed1():
+    if not cameras_enabled:
+        return ("video_feed1 에러", 404)  # 또는 abort(404)
     return Response(mjpeg(workers["cam1"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/video_feed2")
 def video_feed2():
-    print("[ROUTE] /video_feed2 called")
+    if not cameras_enabled:
+        return ("video_feed2 에러", 404)  # 또는 abort(404)
     return Response(mjpeg(workers["cam2"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 @app.route("/video_feed3")
 def video_feed3():
+    if not cameras_enabled:
+        return ("video_feed3 에러", 404)  # 또는 abort(404)
     return Response(mjpeg(workers["cam3"]), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 

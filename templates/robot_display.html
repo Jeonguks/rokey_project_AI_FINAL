@@ -150,6 +150,11 @@
   </main>
 
   <script>
+    // robot_display 들어오면 카메라 OFF 보장
+    fetch("/api/cameras/stop", { method: "POST" }).catch(()=>{});
+  </script>
+
+  <script>
     // -----------------------------
     // Helpers
     // -----------------------------

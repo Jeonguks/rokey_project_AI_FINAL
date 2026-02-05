@@ -435,6 +435,12 @@
   </div>
 
 </body>
+
+<script>
+  // dashboard 들어오면 카메라 ON 보장
+  fetch("/api/cameras/start", { method: "POST" }).catch(()=>{});
+</script>
+
 <script src="{{ url_for('static', filename='js/events.js') }}"></script>
 
 
