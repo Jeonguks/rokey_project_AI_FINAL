@@ -1,170 +1,340 @@
 from config import *
-from yolo.detector import CameraWorker, event_bus
 
-from ultralytics import YOLO
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify, abort
-
-import random
-import cv2
-import numpy as np
-import atexit
+import time
 import random
 import sqlite3
-import time
+import atexit
+from threading import Lock
+
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    session, Response, jsonify
+)
+
+# YOLO(로컬 카메라) 파이프라인
+from yolo.detector import CameraWorker, event_bus as yolo_event_bus
+
+# 오디오
+from audio.AudioPlayer import AudioPlayer, get_mp3_duration_sec
+#from audio.FireLoopPlayer import FireloopPlayer
+
+# ROS 브릿지
+import ros_tb4_bridge
 
 
-
-
+# ==========================================================
+# Flask App
+# ==========================================================
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+
+
+# ==========================================================
+# YOLO Local Cameras (USB/V4L2) Control
+# ==========================================================
+workers_lock = Lock()
+cameras_enabled = False
 
 # YOLO 모델 로드
 model = YOLO(YOLO_MODEL_PATH)
 
-# Camera workers
 workers = {
-    "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model, conf_thres = YOLO_CONF_THRES),
-    "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model, conf_thres = YOLO_CONF_THRES),
-    "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model, conf_thres = YOLO_CONF_THRES),
+    "cam1": CameraWorker(camera_key="cam1", camera_path=CAM1, model=model, conf_thres=YOLO_CONF_THRES),
+    "cam2": CameraWorker(camera_key="cam2", camera_path=CAM2, model=model, conf_thres=YOLO_CONF_THRES),
+    "cam3": CameraWorker(camera_key="cam3", camera_path=CAM3, model=model, conf_thres=YOLO_CONF_THRES),
 }
 
-# label별 마지막 print 시간
-LAST_PRINT_TS = {
-    "fire": 0.0,
-    "stand": 0.0,
-    "down": 0.0,
-}
 
-# label별 print 주기 (초)
-PRINT_INTERVAL_SEC = {
-    "fire": 2.0,
-    "stand": 5.0,
-    "down": 1.0,
-}
+def start_cameras():
+    """YOLO 로컬 카메라 워커 시작"""
+    global cameras_enabled
+    with workers_lock:
+        if cameras_enabled:
+            return
+        for w in workers.values():
+            w.start()
+        cameras_enabled = True
+        print("[CAM] started")
 
-# 디텍션시 사용할 콜백 함수
-# def on_detect(ev):
-#     print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
-"""
-ev 예시:
-{
-    "ts": 1690000000.123,
-    "camera": "cam2",
-    "type": "detected",
-    "label": "fire",   # fire / stand / down
-    ...
-}
-"""
-def on_detect(ev):
 
-    label = ev.get("label")
-    now = time.time()
+def stop_cameras():
+    """YOLO 로컬 카메라 워커 정지"""
+    global cameras_enabled
+    with workers_lock:
+        if not cameras_enabled:
+            return
+        for w in workers.values():
+            try:
+                w.stop()
+            except Exception as e:
+                print("[CAM] stop error:", e)
+        cameras_enabled = False
+        print("[CAM] stopped")
 
-    if label not in PRINT_INTERVAL_SEC:
-        return
 
-    last_ts = LAST_PRINT_TS.get(label, 0.0)
-    interval = PRINT_INTERVAL_SEC[label]
+@app.post("/api/cameras/start")
+def api_cameras_start():
+    start_cameras()
+    return jsonify(ok=True, cameras_enabled=True)
 
-    if (now - last_ts) < interval:
-        return  # 아직 출력할 타이밍 아님
 
-    # 업데이트
-    LAST_PRINT_TS[label] = now
+@app.post("/api/cameras/stop")
+def api_cameras_stop():
+    stop_cameras()
+    return jsonify(ok=True, cameras_enabled=False)
 
-    print(
-        f"[DETECT] label={label} | camera={ev.get('camera')} | "
-        f"ts={time.strftime('%H:%M:%S', time.localtime(now))}"
-    )
 
-# 캠 워커 활성화
-for w in workers.values():
-    w.register_callback(on_detect)
-    w.start()
+@app.get("/api/cameras/status")
+def api_cameras_status():
+    return jsonify(ok=True, cameras_enabled=cameras_enabled)
 
-# 영상 전송 루프: Flask가 브라우저에게 MJPEG 스트림을 보내기 위해 쓰는 generator
-# CameraWorker는 계속 latest_jpeg를 최신으로 갈아끼움
-# mjpeg()는 그 latest_jpeg를 계속 읽어서 브라우저에 보내기만 함
-def mjpeg(worker):
-    print(f"[MJPEG] generator start for {worker}")
 
+def mjpeg(worker: CameraWorker):
+    """
+    YOLO 로컬 카메라 worker의 latest jpeg를 브라우저로 MJPEG 스트림 전송
+    카메라가 꺼지면 generator 종료(브라우저 연결 닫힘)
+    """
     while True:
-        jpg = None
+        if not cameras_enabled:
+            return
 
-        if hasattr(worker, "latest_jpeg"):
-            jpg = worker.latest_jpeg
-            
+        jpg = worker.get_latest_jpeg() if hasattr(worker, "get_latest_jpeg") else getattr(worker, "latest_jpeg", None)
         if jpg:
-            print("[MJPEG] sending frame (bytes =", len(jpg), ")")
             yield (
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" +
                 jpg +
                 b"\r\n"
             )
-        else:
-            print("[MJPEG] no frame yet")
+        time.sleep(0.1)
 
-        time.sleep(0.5)  # 로그 확인용으로 일부러 느리게
+
+@app.route("/video_feed1")
+def video_feed1():
+    if not cameras_enabled:
+        return ("video_feed1 disabled", 404)
+    return Response(mjpeg(workers["cam1"]), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+@app.route("/video_feed2")
+def video_feed2():
+    if not cameras_enabled:
+        return ("video_feed2 disabled", 404)
+    return Response(mjpeg(workers["cam2"]), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+@app.route("/video_feed3")
+def video_feed3():
+    if not cameras_enabled:
+        return ("video_feed3 disabled", 404)
+    return Response(mjpeg(workers["cam3"]), mimetype="multipart/x-mixed-replace; boundary=frame")
+
 
 @app.route("/events")
 def events():
-    return Response(event_bus.stream(), mimetype="text/event-stream")
+    """YOLO detection SSE"""
+    return Response(yolo_event_bus.stream(), mimetype="text/event-stream")
 
-# ----------------------------
-# Helpers
-# ----------------------------
-def camera_available(idx: int) -> bool:
-    cap = cv2.VideoCapture(idx)
-    ok = cap.isOpened()
-    cap.release()
-    return ok
 
-def safe_int(v, default: int) -> int:
-    try:
-        return int(v)
-    except Exception:
-        return default
+# ==========================================================
+# Fire Alarm Loop
+# ==========================================================
+audio_player = AudioPlayer()
+fire_duration = get_mp3_duration_sec(FIRE_ALARM_PATH)
 
-def clamp_percent(v, default: int) -> int:
-    n = safe_int(v, default)
-    return max(0, min(100, n))
+#fire_loop = FireLoopPlayer(
+    # mp3_path=FIRE_ALARM_PATH,
+  #  duration_sec=fire_duration,
+ #   fire_hold_sec=1.5,
+#)
+#fire_loop.start()
 
-# ----------------------------
-# Routes
-# ----------------------------
+
+def on_detect(ev: dict):
+    """YOLO detection callback"""
+    print(f"[DETECTION] camera={ev.get('camera')} label={ev.get('label')}")
+    if ev.get("label") == "fire":
+       # fire_loop.notify_fire()
+
+
+        for w in workers.values():
+            w.register_callback(on_detect)
+
+
+@app.route("/api/alarm/stop", methods=["POST"])
+def api_alarm_stop():
+    #fire_loop.stop_alarm(silence_sec=5)
+    return jsonify(ok=True)
+
+
+# ==========================================================
+# ROS TB4 Status + Camera (ROS bridge)
+# ==========================================================
+@app.get("/api/tb4_status")
+def api_tb4_status():
+    """
+    ns별 상태 조회:
+      /api/tb4_status?ns=/robot6
+      /api/tb4_status?ns=/robot2
+    """
+    ns = (request.args.get("ns", "/robot6") or "/robot6").rstrip("/")
+    if not ns.startswith("/"):
+        ns = "/" + ns
+
+    snap = ros_tb4_bridge.get_state_snapshot()
+    st = snap["robots"].get(ns)
+
+    if not st:
+        return jsonify(ok=False, reason="unknown ns", ns=ns), 404
+
+    # -----------------------------
+    # ✅ JSON 직렬화 안전화
+    # - camera_bytes 같은 바이너리 제거
+    # - bytes가 남아있으면 문자열로 변환
+    # -----------------------------
+    def _to_json_safe(v):
+        # bytes/bytearray -> utf-8 문자열(깨지면 replace)
+        if isinstance(v, (bytes, bytearray)):
+            return v.decode("utf-8", errors="replace")
+        # numpy 타입 방어(있을 수도)
+        try:
+            import numpy as np
+            if isinstance(v, (np.integer,)):
+                return int(v)
+            if isinstance(v, (np.floating,)):
+                return float(v)
+            if isinstance(v, (np.ndarray,)):
+                return v.tolist()
+        except Exception:
+            pass
+        return v
+
+    out = {}
+    for k, v in dict(st).items():
+        # ✅ MJPEG 바이너리 제거 (이게 지금 500의 주범)
+        if k in ("camera_bytes", "cam_jpeg", "jpg", "jpeg", "image_bytes"):
+            continue
+        out[k] = _to_json_safe(v)
+
+    out["ok"] = True
+    out["ns"] = ns  # 프론트에서 확인용으로 있으면 편함
+    return jsonify(out)
+
+
+@app.route("/tb4_events")
+def tb4_events():
+    """ROS TB4 SSE"""
+    return Response(ros_tb4_bridge.event_bus.stream(), mimetype="text/event-stream")
+
+@app.get("/api/ros/cameras/status")
+def ros_camera_status():
+    """
+    ROS 카메라 상태:
+      /api/ros/cameras/status?ns=/robot2
+
+    state:
+      ON        : 최근 10초 내 프레임 수신
+      OFF       : 로봇 없음 / 프레임 없음 / 오래됨
+    """
+    ns = (request.args.get("ns", "/robot2") or "/robot2").rstrip("/")
+    if not ns.startswith("/"):
+        ns = "/" + ns
+
+    now = time.time()
+    with ros_tb4_bridge._state_lock:
+        st = ros_tb4_bridge.shared_state["robots"].get(ns)
+        if not st:
+            return jsonify(ok=False, state="OFF", reason="unknown ns", ns=ns), 404
+
+        last = float(st.get("camera_last_ts") or 0.0)
+        size = int(st.get("camera_size") or 0)
+        fmt  = st.get("camera_format")
+
+    # 10초 기준
+    if last > 0 and (now - last) <= 10.0 and size > 0:
+        return jsonify(ok=True, state="ON", ns=ns, last_ts=last, age_sec=now-last, size=size, fmt=fmt)
+    else:
+        return jsonify(ok=True, state="OFF", ns=ns, last_ts=last, age_sec=(now-last if last else None), size=size, fmt=fmt)
+
+
+@app.get("/api/ros/cameras/mjpeg")
+def ros_cameras_mjpeg():
+    """
+    ROS CompressedImage 기반 MJPEG:
+      /api/ros/cameras/mjpeg?ns=/robot2
+    """
+    ns = (request.args.get("ns", "/robot2") or "/robot2").rstrip("/")
+    if not ns.startswith("/"):
+        ns = "/" + ns
+
+    def gen():
+        boundary = b"--frame"
+        while True:
+            snap = ros_tb4_bridge.get_state_snapshot()
+            st = snap["robots"].get(ns)
+
+            # ✅ 키 수정: cam_jpeg -> camera_bytes
+            jpg = st.get("camera_bytes") if st else None
+            if not jpg:
+                time.sleep(0.1)
+                continue
+
+            yield boundary + b"\r\n"
+            yield b"Content-Type: image/jpeg\r\n"
+            yield f"Content-Length: {len(jpg)}\r\n\r\n".encode()
+            yield jpg + b"\r\n"
+
+            time.sleep(0.05)  # ~20fps 제한
+
+    return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+# ==========================================================
+# Auth + Pages
+# ==========================================================
 @app.route("/")
 def home():
     if "username" in session:
         return redirect(url_for("dashboard"))
     return redirect(url_for("login"))
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "")
+        username = request.form.get("username", "")  # ✅ 버그 수정
         password = request.form.get("password", "")
 
         if username == USERNAME and password == PASSWORD:
             session["username"] = username
             return redirect(url_for("dashboard"))
-        else:
-            return redirect(url_for("login"))
+        return redirect(url_for("login"))
 
     return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    return redirect(url_for("login"))
+
 
 @app.route("/dashboard")
 def dashboard():
     if "username" not in session:
         return redirect(url_for("login"))
 
-    # todo 로봇에서 데이터 연동 필요
-    robotA_battery = clamp_percent(0, 0)
-    robotB_battery = clamp_percent(0, 0)
+    # Dashboard 들어오면 YOLO 카메라 ON
+    start_cameras()
+
+    robotA_battery = 0
+    robotB_battery = 0
     incident_coord = "x=12.3, y=4.5"
     incident_status = "화재 진압중"
     incident_detail = "소화 작업 진행 중"
@@ -180,119 +350,68 @@ def dashboard():
     )
 
 
-# ----------------------------
-# Camera streaming
-# ----------------------------
-# List of store coordinates
-pt_1 = (460, 0)
-pt_2 = (640, 0)
-pt_3 = (640, 120)
-pt_4 = (460, 120)
-coordinates = [pt_1, pt_2, pt_3, pt_4]
+@app.route("/robot_display")
+def robot_display():
+    if "username" not in session:
+        return redirect(url_for("login"))
+
+    # robot_display 들어오면 YOLO 카메라 OFF
+    stop_cameras()
+    return render_template("robot_display.html", username=session["username"])
 
 
-# todo 분석 필요
-# def generate_frames_box(camera_id: int):
-def generate_frames_box(camera_path: int):
-    # camera = cv2.VideoCapture(camera_id)
-    camera = cv2.VideoCapture(camera_path, cv2.CAP_V4L2)
-
-    if not camera.isOpened():
-        return
-
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-
-        for (x, y) in coordinates:
-            cv2.circle(frame, (x, y), 5, (0, 0, 255), -1)
-
-        pts = np.array(coordinates, np.int32).reshape((-1, 1, 2))
-        cv2.polylines(frame, [pts], isClosed=True, color=(0, 255, 0), thickness=2)
-
-        ret, buffer = cv2.imencode(".jpg", frame)
-        if not ret:
-            continue
-
-        frame_bytes = buffer.tobytes()
-        yield (b"--frame\r\n"
-               b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
-
-    camera.release()
-
-@app.route("/video_feed1")
-def video_feed1():
-    return Response(mjpeg(workers["cam1"]), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-@app.route("/video_feed2")
-def video_feed2():
-    print("[ROUTE] /video_feed2 called")
-    return Response(mjpeg(workers["cam2"]), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-@app.route("/video_feed3")
-def video_feed3():
-    return Response(mjpeg(workers["cam3"]), mimetype="multipart/x-mixed-replace; boundary=frame")
+@app.route("/tb4")
+def tb4_page():
+    if "username" not in session:
+        return redirect(url_for("login"))
+    # TB4 페이지는 로봇 상태 중심 → YOLO 카메라 OFF 유지하고 싶으면 여기서 stop_cameras()도 가능
+    return render_template("tb4_monitor.html")
 
 
-# JS로 주기 호출 추가
+# ==========================================================
+# Misc APIs
+# ==========================================================
 @app.route("/api/status")
 def api_status():
-    # TODO: 여기 random 대신 실제 배터리 수신 값으로 바꾸면 끝
-    robotA_battery = random.randint(0, 100)
-    robotB_battery = random.randint(0, 100)
-    return jsonify({
-        "robotA_battery": robotA_battery,
-        "robotB_battery": robotB_battery
-    })
+    # TODO: random → 실제 값으로 교체
+    return jsonify(robotA_battery=random.randint(0, 100),
+                   robotB_battery=random.randint(0, 100))
 
 
-# ✅ 템플릿에 있는 form action 때문에 필요
 @app.route("/api/dispatch_robot")
 def dispatch_robot():
-    # todo 출동 요청 구현
-    return
+    # TODO: 출동 요청 구현
+    return jsonify(ok=True, msg="dispatch requested (todo)")
 
 
-
-# ----------------------------
-# DB 데이터 조회
-# ----------------------------
 def get_detection_entries():
-
-    # Connect to SQLite database (or create it if it doesn't exist)
-    connection = sqlite3.connect('mydatabase.db')
-
-    # Create a cursor object to interact with the database
-    cursor = connection.cursor()
-
-    # SQL command to select all data from the table
-    select_query = "SELECT * FROM detection_table;"
-
-    # Execute the command and fetch all results
-    cursor.execute(select_query)
-    rows = cursor.fetchall()
-
-    # Print each row
-    for row in rows:
-        print(row)
-
-    # Commit the changes and close the connection
-    connection.commit()
-    connection.close()
+    conn = sqlite3.connect("mydatabase.db")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM detection_table;")
+    rows = cur.fetchall()
+    conn.close()
     return rows
 
 
-# ----------------------------
-# Logout
-# ----------------------------
-@app.route("/logout")
-def logout():
-    session.pop("username", None)
-    return redirect(url_for("login"))
+# ==========================================================
+# Graceful shutdown hooks
+# ==========================================================
+@atexit.register
+def _cleanup():
+    try:
+        stop_cameras()
+    except Exception:
+        pass
+    try:
+        ros_tb4_bridge.stop_bridge_system()
+    except Exception:
+        pass
 
+
+# ==========================================================
+# Main
+# ==========================================================
 if __name__ == "__main__":
-    # use_reloader=False는 카메라 핸들 이슈 줄이는데 도움
-    app.run(debug=True, use_reloader=False, port=5167)
-
-
+    # Flask 3.x에서도 안전하게 여기서 시작
+    ros_tb4_bridge.start_bridge_system(initial_namespaces=["/robot2", "/robot6"])
+    app.run(host="0.0.0.0", port=5167, debug=True, use_reloader=False)
