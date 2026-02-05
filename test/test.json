@@ -1,0 +1,5 @@
+{
+    "class_a_detection": ["stand", "fire"],
+    "class_b_detection": ["fire"],
+    "class_c_detection": ["down"]
+}

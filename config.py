@@ -13,3 +13,7 @@ CAM3 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:2:1.0-video-index0" #-> ../../vi
 YOLO_MODEL_PATH = "res/best_webcam_v8n.pt"
 YOLO_CONF_THRES = 0.3
 YOLO_IMG_SZ = 640
+
+# audio
+FIRE_ALARM_PATH = "res/fire_alarm.mp3"
+

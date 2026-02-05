@@ -11,7 +11,7 @@ DETECT_LABELS = {"fire", "stand", "down"}
 DETECT_DEBOUNCE_SEC = {
     "fire": 1.0,
     "stand": 1.0,
-    "down": 1.0,
+    "down": 1.0
 }
 
 
@@ -62,7 +62,7 @@ class CameraWorker:
         self.latest_meta = {"ts": 0, "objects": []}
 
         self.callbacks = []  # list[callable]
-        self.stop = threading.Event()
+        self._stop_evt = threading.Event()
         self.thread = None
 
         # 이벤트 중복 방지용 (예: car 검출 연속 알림 스팸 방지)
@@ -77,12 +77,12 @@ class CameraWorker:
 
         if self.thread and self.thread.is_alive():
             return
-        self.stop.clear()
+        self._stop_evt.clear()
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
 
     def stop(self):
-        self.stop.set()
+        self._stop_evt.set()
         if self.thread:
             self.thread.join(timeout=2.0)
 
@@ -142,7 +142,7 @@ class CameraWorker:
             print(f"[cam] camera open failed: {self.camera_path}")
             return
 
-        while not self.stop.is_set():
+        while not self._stop_evt.is_set():
             ok, frame = cap.read()
             if not ok:
                 print(f"[{self.camera_key}] cap.read() failed")

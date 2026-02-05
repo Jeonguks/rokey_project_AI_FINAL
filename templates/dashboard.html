@@ -42,6 +42,18 @@
       font-size: 14px;
     }
 
+    .nav-link{
+      padding: 6px 14px;
+      background-color: #0ea5e9;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .nav-link:hover { filter: brightness(0.95); }
+
     .logout-link {
       padding: 6px 14px;
       background-color: #4CAF50;
@@ -272,6 +284,7 @@
   <header class="header">
     <div class="header-left">My Dashboard</div>
     <div class="header-right">
+      <a href="{{ url_for('robot_display') }}" class="nav-link">TB4 Monitor</a>
       <span>👤 {{ username }}</span>
       <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
     </div>
@@ -347,6 +360,9 @@
           로봇 출동 <span class="subtle"></span>
         </div>
 
+        <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
+
+
         <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
         <form method="POST" action="{{ url_for('dispatch_robot') }}">
           <button class="btn btn-primary" type="submit">로봇 출동</button>
@@ -419,7 +435,26 @@
   </div>
 
 </body>
+
+<script>
+  // dashboard 들어오면 카메라 ON 보장
+  fetch("/api/cameras/start", { method: "POST" }).catch(()=>{});
+</script>
+
 <script src="{{ url_for('static', filename='js/events.js') }}"></script>
+
+
+<script>
+  async function stopAlarm(){
+    try{
+      const res = await fetch("/api/alarm/stop", {method:"POST"});
+      if(res.ok){
+        // 필요하면 토스트/스낵바 표시
+        console.log("alarm stopped");
+      }
+    }catch(e){}
+  }
+</script>
 
 <script>
   function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }

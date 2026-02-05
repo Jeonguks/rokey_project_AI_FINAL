@@ -1,0 +1,407 @@
+<!-- templates/tb4_monitor.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TB4 Monitor</title>
+
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#f3f4f6; color:#111; }
+    .header {
+      display:flex; justify-content:space-between; align-items:center;
+      height:60px; padding:0 24px; background:#1f2933; color:#fff;
+      box-shadow:0 2px 4px rgba(0,0,0,0.2);
+    }
+    .header-left { font-size:18px; font-weight:800; }
+    .header-right { display:flex; align-items:center; gap:12px; font-size:13px; opacity:0.95; }
+
+    .nav-link{
+      padding: 6px 14px;
+      background-color: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .nav-link:hover { filter: brightness(0.95); }
+
+    .pill {
+      display:inline-flex; align-items:center;
+      padding:4px 10px; border-radius:999px;
+      font-size:12px; font-weight:800;
+      background:#eef2ff; color:#3730a3;
+    }
+    .pill.green { background:#dcfce7; color:#166534; }
+    .pill.red   { background:#fee2e2; color:#991b1b; }
+    .pill.amber { background:#fef3c7; color:#92400e; }
+
+    .page { padding: 14px; box-sizing: border-box; }
+
+    /* ✅ 2대 상태 카드용 그리드 */
+    .status-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 900px) {
+      .status-grid{ grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background:#fff; border-radius:12px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      padding:16px;
+    }
+    .card-title { margin:0 0 12px 0; font-size:16px; font-weight:900; }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .kv {
+      display:grid; grid-template-columns: 150px 1fr;
+      gap:10px; font-size:14px; align-items:start;
+    }
+    .k { color:#374151; font-weight:700; }
+    .v { color:#111; }
+
+    .progress-wrap { display:flex; align-items:center; gap:10px; }
+    .progress {
+      width: 260px; max-width: 100%;
+      height: 10px; background:#e5e7eb;
+      border-radius:999px; overflow:hidden;
+    }
+    .progress > div { height:100%; width:0%; background:#22c55e; }
+
+    .log {
+      height: 260px; overflow:auto; background:#0b1220; color:#dbeafe;
+      border-radius:10px; padding:12px; font-size:12px; line-height:1.5;
+    }
+    .log .row { border-bottom: 1px solid rgba(255,255,255,0.08); padding:6px 0; }
+    .muted { font-size:12px; color:#6b7280; margin-top:8px; }
+
+    /* Cameras */
+    .cam-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .cam-card{
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+    .cam-head{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      margin-bottom: 10px;
+    }
+    .cam-frame{
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #111827;
+      border-radius: 12px;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .cam-frame img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:block;
+    }
+    @media (max-width: 900px) {
+      .cam-grid{ grid-template-columns: 1fr; }
+      .progress { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <div class="header-left">TB4 Monitor</div>
+    <div class="header-right">
+      <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+      <!-- 헤더는 “대표”만 두거나 아예 제거해도 됨 -->
+      <span class="mono">/robot2 & /robot6</span>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Cameras -->
+    <section class="card" style="margin-bottom:12px;">
+      <h2 class="card-title">Live Cameras</h2>
+
+      <div class="cam-grid">
+        <div class="cam-card">
+          <div class="cam-head">
+            <span class="mono" id="cam_ns_1">/robot2</span>
+            <span class="pill amber" id="cam_status_1">CHECKING</span>
+          </div>
+          <div class="cam-frame">
+            <img id="cam-robot2"
+                 alt="robot2 camera"
+                 src="/api/ros/cameras/mjpeg?ns=/robot2">
+          </div>
+        </div>
+
+        <div class="cam-card">
+          <div class="cam-head">
+            <span class="mono" id="cam_ns_2">/robot6</span>
+            <span class="pill amber" id="cam_status_2">CHECKING</span>
+          </div>
+          <div class="cam-frame">
+            <img id="cam-robot6"
+                 alt="robot6 camera"
+                 src="/api/ros/cameras/mjpeg?ns=/robot6">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ✅ TB4 Status 2대 -->
+    <div class="status-grid">
+      <!-- Robot2 -->
+      <section class="card">
+        <h2 class="card-title">터틀봇4 상태 <span class="mono">/robot2</span></h2>
+
+        <div class="kv">
+          <div class="k">연결</div>
+          <div class="v"><span id="r2_connected" class="pill amber">CHECKING</span></div>
+
+          <div class="k">마지막 수신</div>
+          <div class="v"><span id="r2_last_seen" class="mono">-</span></div>
+
+          <div class="k">배터리</div>
+          <div class="v">
+            <div class="progress-wrap">
+              <div class="progress"><div id="r2_batt_bar"></div></div>
+              <div style="min-width:70px; text-align:right;">
+                <span id="r2_batt_text" class="mono">0%</span>
+              </div>
+            </div>
+            <div class="muted">
+              voltage: <span id="r2_volt" class="mono">-</span> V,
+              current: <span id="r2_curr" class="mono">-</span> A
+            </div>
+          </div>
+
+          <div class="k">Pose Frame</div>
+          <div class="v"><span id="r2_pose_frame" class="mono">map</span></div>
+
+          <div class="k">위치 (x, y)</div>
+          <div class="v">
+            x=<span id="r2_x" class="mono">0.00</span>,
+            y=<span id="r2_y" class="mono">0.00</span>
+          </div>
+
+          <div class="k">Yaw</div>
+          <div class="v"><span id="r2_yaw" class="mono">0.0</span> °</div>
+
+          <div class="k">속도 (v, w)</div>
+          <div class="v">
+            v=<span id="r2_lin" class="mono">0.00</span> m/s,
+            w=<span id="r2_ang" class="mono">0.00</span> rad/s
+          </div>
+        </div>
+      </section>
+
+      <!-- Robot6 -->
+      <section class="card">
+        <h2 class="card-title">터틀봇4 상태 <span class="mono">/robot6</span></h2>
+
+        <div class="kv">
+          <div class="k">연결</div>
+          <div class="v"><span id="r6_connected" class="pill amber">CHECKING</span></div>
+
+          <div class="k">마지막 수신</div>
+          <div class="v"><span id="r6_last_seen" class="mono">-</span></div>
+
+          <div class="k">배터리</div>
+          <div class="v">
+            <div class="progress-wrap">
+              <div class="progress"><div id="r6_batt_bar"></div></div>
+              <div style="min-width:70px; text-align:right;">
+                <span id="r6_batt_text" class="mono">0%</span>
+              </div>
+            </div>
+            <div class="muted">
+              voltage: <span id="r6_volt" class="mono">-</span> V,
+              current: <span id="r6_curr" class="mono">-</span> A
+            </div>
+          </div>
+
+          <div class="k">Pose Frame</div>
+          <div class="v"><span id="r6_pose_frame" class="mono">map</span></div>
+
+          <div class="k">위치 (x, y)</div>
+          <div class="v">
+            x=<span id="r6_x" class="mono">0.00</span>,
+            y=<span id="r6_y" class="mono">0.00</span>
+          </div>
+
+          <div class="k">Yaw</div>
+          <div class="v"><span id="r6_yaw" class="mono">0.0</span> °</div>
+
+          <div class="k">속도 (v, w)</div>
+          <div class="v">
+            v=<span id="r6_lin" class="mono">0.00</span> m/s,
+            w=<span id="r6_ang" class="mono">0.00</span> rad/s
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 로그는 일단 1개 유지 (원하면 로봇별 2개로도 분리 가능) -->
+    <section class="card">
+      <h2 class="card-title">최근 이벤트</h2>
+      <div id="tb4_log" class="log"></div>
+      <div class="muted">* SSE 연결이 안 되면 로그가 비어있을 수 있어요.</div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }
+    function fmtTs(sec){
+      if(!sec || sec <= 0) return "-";
+      const d = new Date(sec * 1000);
+      return d.toLocaleString();
+    }
+    function setText(id, v){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.textContent = (v === null || v === undefined || v === "") ? "-" : String(v);
+    }
+    function toFixedMaybe(v, digits){
+      if(v === null || v === undefined) return "-";
+      if(typeof v === "number") return v.toFixed(digits);
+      const f = Number(v);
+      return isNaN(f) ? String(v) : f.toFixed(digits);
+    }
+    function setPill(el, text, color){
+      if(!el) return;
+      el.textContent = text;
+      el.className = `pill ${color}`;
+    }
+
+    // -----------------------------
+    // ✅ TB4 status updater (2대 공용)
+    // -----------------------------
+    async function refreshTB4(ns, prefix){
+      try{
+        const res = await fetch(`/api/tb4_status?ns=${encodeURIComponent(ns)}`, {cache:"no-store"});
+        if(!res.ok) return;
+        const d = await res.json();
+
+        // connected pill
+        const pill = document.getElementById(`${prefix}_connected`);
+        if(d.connected){
+          setPill(pill, "CONNECTED", "green");
+        }else{
+          setPill(pill, "DISCONNECTED", "red");
+        }
+
+        setText(`${prefix}_last_seen`, fmtTs(d.last_seen_ts));
+        setText(`${prefix}_pose_frame`, d.pose_frame ?? "map");
+
+        // battery
+        const batt = clamp(d.battery_percent ?? 0);
+        const bar = document.getElementById(`${prefix}_batt_bar`);
+        const txt = document.getElementById(`${prefix}_batt_text`);
+        if(bar) {
+          bar.style.width = batt + "%";
+          bar.style.background = (batt <= 20) ? "#ef4444" : (batt <= 50) ? "#f59e0b" : "#22c55e";
+        }
+        if(txt) txt.textContent = batt + "%";
+
+        setText(`${prefix}_volt`, toFixedMaybe(d.battery_voltage, 2));
+        setText(`${prefix}_curr`, toFixedMaybe(d.battery_current, 2));
+
+        // pose / vel
+        setText(`${prefix}_x`, toFixedMaybe(d.x, 2));
+        setText(`${prefix}_y`, toFixedMaybe(d.y, 2));
+        setText(`${prefix}_yaw`, toFixedMaybe(d.yaw_deg, 1));
+        setText(`${prefix}_lin`, toFixedMaybe(d.lin_vel, 2));
+        setText(`${prefix}_ang`, toFixedMaybe(d.ang_vel, 2));
+      }catch(e){}
+    }
+
+    // 폴링 주기: 상태는 1초~2초 권장 (500ms는 서버 부담 큼)
+    function startStatusPolling(){
+      refreshTB4("/robot2", "r2");
+      refreshTB4("/robot6", "r6");
+      setInterval(() => {
+        refreshTB4("/robot2", "r2");
+        refreshTB4("/robot6", "r6");
+      }, 1000);
+    }
+
+    // -----------------------------
+    // Cameras (선택: status pill만 갱신)
+    // -----------------------------
+    async function pollCamState(panelIdx, ns){
+      const stEl  = document.getElementById(`cam_status_${panelIdx}`);
+      try{
+        const r = await fetch(`/api/ros/cameras/status?ns=${encodeURIComponent(ns)}`, {cache:"no-store"});
+        if(!r.ok){ setPill(stEl, "OFF", "red"); return; }
+        const d = await r.json();
+        if(d.state === "ON") setPill(stEl, "ON", "green");
+        else if(d.state === "SUSPENDED") setPill(stEl, "SUSPENDED", "amber");
+        else setPill(stEl, "OFF", "red");
+      }catch(e){
+        setPill(stEl, "OFF", "red");
+      }
+    }
+
+    function startCamPolling(){
+      pollCamState(1, "/robot2");
+      pollCamState(2, "/robot6");
+      setInterval(() => {
+        pollCamState(1, "/robot2");
+        pollCamState(2, "/robot6");
+      }, 2000);
+    }
+
+    // -----------------------------
+    // SSE log (기존 1개 유지)
+    // -----------------------------
+    const logEl = document.getElementById("tb4_log");
+    function pushLog(obj){
+      const row = document.createElement("div");
+      row.className = "row mono";
+      const ts = obj.ts ? fmtTs(obj.ts) : "-";
+      row.textContent = `[${ts}] ${obj.type || "event"} ` + JSON.stringify(obj);
+      logEl.prepend(row);
+
+      const rows = logEl.querySelectorAll(".row");
+      if(rows.length > 60){
+        for(let i=60; i<rows.length; i++) rows[i].remove();
+      }
+    }
+
+    function startSSE(){
+      try{
+        const es = new EventSource("/tb4_events");
+        es.addEventListener("tb4", (e) => {
+          const ev = JSON.parse(e.data);
+          pushLog(ev);
+        });
+      }catch(e){}
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      startStatusPolling();
+      startCamPolling();
+      startSSE();
+    });
+  </script>
+</body>
+</html>
