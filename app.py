@@ -16,16 +16,46 @@ import sqlite3
 import time
 
 
+import ros_tb4_bridge
 
-# mp3 초 구하는 유틸
+
 
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
+
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+
+
+# ros2 토픽 리시브
+
+ros_tb4_bridge.start_ros_thread("/robot6")  
+
+@app.route("/api/tb4_status")
+def api_tb4_status():
+    with ros_tb4_bridge._state_lock:
+        st = dict(ros_tb4_bridge.shared_state)
+    return jsonify(st)
+
+@app.route("/tb4_events")
+def tb4_events():
+    return Response(ros_tb4_bridge.event_bus.stream(), mimetype="text/event-stream")
+
+@app.route("/tb4")
+def tb4_page():
+    if "username" not in session:   # 로그인 유지하고 싶으면
+        return redirect(url_for("login"))
+    return render_template("robot_display.html")
+
+@app.route("/robot_display")
+def robot_display():
+    if "username" not in session:
+        return redirect(url_for("login"))
+    return render_template("robot_display.html", username=session["username"])
+
 
 
 # 화재 경보음
