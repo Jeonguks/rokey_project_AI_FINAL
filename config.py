@@ -14,6 +14,10 @@ YOLO_MODEL_PATH = "res/best_webcam_v8n.pt"
 YOLO_CONF_THRES = 0.3
 YOLO_IMG_SZ = 640
 
+# fps 조정 목적
+FRAME_SLEEP = 0.5
+
 # audio
 FIRE_ALARM_PATH = "res/fire_alarm.mp3"
+
 

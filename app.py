@@ -15,11 +15,32 @@ import random
 import sqlite3
 import time
 
-
 import ros_tb4_bridge
 
-
 from threading import Lock
+import json
+
+from ros_fire_publisher import RosFirePublisherRunner
+
+
+
+ros_fire_runner = RosFirePublisherRunner()
+ros_fire_runner.start()
+
+
+ROS_ENABLED = False
+_ros_fire = None
+
+try:
+    import rclpy
+    from rclpy.node import Node
+    from rclpy.executors import SingleThreadedExecutor
+    from std_msgs.msg import String
+    ROS_ENABLED = True
+except Exception as e:
+    print(f"[ROS] disabled (import failed): {e}")
+    ROS_ENABLED = False
+
 
 
 
@@ -30,9 +51,11 @@ app.secret_key = SECRET_KEY
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+
 # 페이지 전환시 카메라 안돌게 
 workers_lock = Lock()
 cameras_enabled = False
+
 
 @app.post("/api/cameras/start")
 def api_cameras_start():
@@ -146,12 +169,16 @@ ev 예시:
     ...
 }
 """
+
+
+# 디텍션
 def on_detect(ev):
     print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
+
     label = ev.get("label")
     if label == "fire":
         fire_loop.notify_fire()
-
+        ros_fire_runner.publish_fire(ev)
   
 
 # 캠 워커 활성화 > 
@@ -179,7 +206,7 @@ def mjpeg(worker):
                 b"\r\n"
             )
         # 프레임 없을 때는 조용히 대기 (로그 X)
-        time.sleep(0.1)
+        time.sleep(FRAME_SLEEP)
 
 @app.route("/events")
 def events():
