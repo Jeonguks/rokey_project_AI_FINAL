@@ -6,6 +6,8 @@ from audio.FireLoopPlayer  import FireLoopPlayer
 
 from ultralytics import YOLO
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify, abort
+import sqlite3
+from threading import Lock
 
 import random
 import cv2
