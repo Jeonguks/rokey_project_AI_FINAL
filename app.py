@@ -20,16 +20,8 @@ import ros_tb4_bridge
 from threading import Lock
 import json
 
-from ros_fire_publisher import RosFirePublisherRunner
 
-
-
-ros_fire_runner = RosFirePublisherRunner()
-ros_fire_runner.start()
-
-
-ROS_ENABLED = False
-_ros_fire = None
+from ros_runtime import RosRuntime
 
 try:
     import rclpy
@@ -43,14 +35,40 @@ except Exception as e:
 
 
 
-
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
+
+rt = RosRuntime("/robot6")
+rt.start()
+
+# ✅ 추가: 복귀 요청 API
+@app.post("/api/return_home")
+def api_return_home():
+    # 1) ROS 런타임/노드 준비 체크
+
+    if rt is None:
+        return {"ok": False, "error": "ROS runtime not created"}, 503
+
+    # 2) 짧게 준비 대기(최대 1초)
+    for _ in range(10):
+        if getattr(rt, "ret", None) is not None:
+            break
+        time.sleep(0.1)
+
+    if rt.ret is None:
+        return {"ok": False, "error": "ROS node not ready"}, 503
+
+    # 3) publish
+    rt.ret.publish_request()
+    return {"ok": True}
+
 
 
 # Hardcoded user credentials for demonstration
 USERNAME = "user"
 PASSWORD = "password"
+
 
 # 페이지 전환시 카메라 안돌게 
 workers_lock = Lock()
@@ -101,7 +119,7 @@ def stop_cameras():
 
 # ros2 토픽 리시브
 
-ros_tb4_bridge.start_ros_thread("/robot6")  
+# ros_tb4_bridge.start_ros_thread("/robot6")  
 
 @app.route("/api/tb4_status")
 def api_tb4_status():
@@ -175,10 +193,13 @@ ev 예시:
 def on_detect(ev):
     print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
 
+    ev['label'] = 'fire' # test code
+
     label = ev.get("label")
     if label == "fire":
         fire_loop.notify_fire()
-        ros_fire_runner.publish_fire(ev)
+        # ros_fire_runner.publish_fire(ev)
+        rt.fire.publish_fire(ev)
   
 
 # 캠 워커 활성화 > 
@@ -404,5 +425,4 @@ def logout():
 if __name__ == "__main__":
     # use_reloader=False는 카메라 핸들 이슈 줄이는데 도움
     app.run(debug=True, use_reloader=False, port=5167)
-
 

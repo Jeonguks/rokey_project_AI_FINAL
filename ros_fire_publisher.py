@@ -54,7 +54,7 @@ class RosFirePublisher(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
 
-        self.pub = self.create_publisher(String, "/fire_detected", fire_qos)
+        self.pub = self.create_publisher(String, "/webcam_detected", fire_qos)
 
         self._last_pub_ts = 0.0
         self._debounce_sec = 1.0
@@ -101,34 +101,3 @@ class RosFirePublisher(Node):
         self.get_logger().info(
             f"fire published | camera={ev.get('camera')} | label={label} | payload={msg.data}"
         )
-
-
-
-class RosFirePublisherRunner:
-    def __init__(self):
-        self.node = None
-        self.thread = None
-
-    def start(self):
-        if not ROS_ENABLED:
-            return
-
-        def _spin():
-            rclpy.init(args=None)
-            self.node = RosFirePublisher()
-            executor = SingleThreadedExecutor()
-            executor.add_node(self.node)
-            try:
-                executor.spin()
-            finally:
-                executor.shutdown()
-                self.node.destroy_node()
-                rclpy.shutdown()
-
-        self.thread = threading.Thread(target=_spin, daemon=True)
-        self.thread.start()
-
-    def publish_fire(self, ev: dict):
-        if self.node is None:
-            return
-        self.node.publish_fire(ev)

@@ -357,10 +357,11 @@
       <!-- 로봇 출동 카드 -->
       <div class="card ">
         <div class="card-title">
-          로봇 출동 <span class="subtle"></span>
         </div>
-
+      <div style="display:flex; gap:10px; align-items:center;">
         <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
+        <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
+      </div>
 
 
         <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
@@ -435,6 +436,24 @@
   </div>
 
 </body>
+
+<script>
+  // ✅ 추가: 복귀 요청 API 호출
+  document.getElementById("btnReturnHome")?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/return_home", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) throw new Error(data.error || "request failed");
+      alert("복귀 요청 전송 완료");
+      console.log(data)
+
+    } catch (e) {
+      console.error(e);
+      alert("복귀 요청 실패");
+    }
+  });
+</script>
 
 <script>
   // dashboard 들어오면 카메라 ON 보장

@@ -15,9 +15,11 @@ YOLO_CONF_THRES = 0.3
 YOLO_IMG_SZ = 640
 
 # fps 조정 목적
-FRAME_SLEEP = 0.5
+FRAME_SLEEP = 3
 
 # audio
 FIRE_ALARM_PATH = "res/fire_alarm.mp3"
 
 
+ROS_ENABLED = False
+_ros_fire = None
