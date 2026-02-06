@@ -275,6 +275,39 @@
       .middle { grid-template-columns: 1fr; }
       .bottom { grid-template-columns: 1fr; }
     }
+
+    /* ===============================
+    Bottom Fixed Action Bar
+    =============================== */
+    .bottom-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+
+      padding: 12px 16px;
+      background: rgba(31, 41, 51, 0.95); /* 헤더 색 계열 */
+      backdrop-filter: blur(6px);
+
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.25);
+      z-index: 1000;
+    }
+
+    /* 버튼 크기 통일 */
+    .bottom-action-bar .btn {
+      min-width: 140px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    /* 페이지 내용이 버튼에 가리지 않게 하단 여백 확보 */
+    .page {
+      padding-bottom: 80px;  /* action bar 높이보다 크게 */
+    }
   </style>
 </head>
 
@@ -355,13 +388,13 @@
       </div>
 
       <!-- 로봇 출동 카드 -->
-      <div class="card ">
+      <!-- <div class="card ">
         <div class="card-title">
         </div>
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
         <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
-      </div>
+      </div> -->
 
 
         <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
@@ -418,6 +451,12 @@
       </div>
 
     </section>
+
+    <!-- ✅ 하단 고정 액션 바 -->
+    <div class="bottom-action-bar">
+      <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
+      <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
+    </div>
 
   </main>
 
