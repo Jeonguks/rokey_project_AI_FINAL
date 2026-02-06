@@ -6,6 +6,25 @@
   <title>Dashboard</title>
 
   <style>
+    /* TB4 2개 가로 배치 */
+    .tb4-video-wrapper {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .tb4-video-container {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .tb4-video-container {
+        flex-direction: column;
+      }
+    }
+
     /* ===============================
     TB4 Monitor (moved from robot_display)
     =============================== */
@@ -393,19 +412,21 @@
 
   <!-- Middle + Bottom -->
   <main class="page">
-    <section style="margin-top: 12px;">
-      <div class="video-card">
-        <div class="video-stage">
-          <img src="/tb4_video_feed?ns=/robot2">
+    <section class="tb4-video-wrapper">
+      <div class="tb4-video-container">
+        <div class="video-card">
+          <div class="video-stage">
+            <img src="/tb4_video_feed?ns=/robot2" />
+          </div>
+          <div class="camera-label">TB4 (/robot2) Camera</div>
         </div>
-        <div class="camera-label">TB4 (/robot2) Camera</div>
-      </div>
 
-      <div class="video-card">
-        <div class="video-stage">
-          <img src="/tb4_video_feed?ns=/robot6">
+        <div class="video-card">
+          <div class="video-stage">
+            <img src="/tb4_video_feed?ns=/robot6" />
+          </div>
+          <div class="camera-label">TB4 (/robot6) Camera</div>
         </div>
-        <div class="camera-label">TB4 (/robot6) Camera</div>
       </div>
     </section>
 
