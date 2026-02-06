@@ -293,37 +293,9 @@
     }
     .btn-outline:hover { background: #f9fafb; }
 
-    /* Bottom section: robot statuses */
-    .bottom {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 12px;
-    }
+    
 
-    .robot-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .progress {
-      width: 60%;
-      height: 10px;
-      background: #e5e7eb;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .progress > div {
-      height: 100%;
-      width: 0%; /* 배터리 값에 따라 변경 */
-      background: #22c55e;
-    }
-
+    
     .muted {
       font-size: 12px;
       color: #6b7280;
@@ -449,134 +421,91 @@
         </div>
       </div>
 
-      <!-- 로봇 출동 카드 -->
-      <!-- <div class="card ">
-        <div class="card-title">
-        </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
-        <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
-      </div> -->
-
-
-        <!-- 실제로는 버튼 클릭이 POST를 때리게 하는 게 정석
-        <form method="POST" action="{{ url_for('dispatch_robot') }}">
-          <button class="btn btn-primary" type="submit">로봇 출동</button>
-        </form> -->
-      </div>
-
-    </section>
-
-    <!-- ===============================
-         하단: 로봇 상태 A/B
-    =============================== -->
-    <section class="bottom">
-
-      <!-- 로봇A -->
-      <div class="card ">
-        <div class="card-title">로봇A 상태</div>
-
-        <div class="robot-row">
-          <div><strong>배터리</strong></div>
-          <div style="display:flex; align-items:center; gap:10px; width:70%;">
-            <div class="progress">
-              <div style="width: {{ robotB_battery}}%"></div>
-            </div>
-
-
-
-            <div style="min-width:52px; text-align:right;">
-              {{ robotA_battery | default(0) }}%
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- 로봇B -->
-      <div class="card ">
-        <div class="card-title">로봇B 상태</div>
-
-        <div class="robot-row">
-          <div><strong>배터리</strong></div>
-          <div style="display:flex; align-items:center; gap:10px; width:70%;">
-            <div class="progress">
-                <div style="width: {{ robotB_battery}}%"></div>
-            </div>
-
-            <div style="min-width:52px; text-align:right;">
-              {{ robotB_battery | default(0)}}%
-            </div>
-          </div>
-        </div>
-
-      </div>
-
     </section>
 
     <section style="margin-top: 12px;">
-      <div class="tb4-grid">
-
-        <!-- LEFT: Status -->
-        <div class="tb4-card">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <h2 class="tb4-title" style="margin:0;">터틀봇4 상태</h2>
-
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span class="tb4-mono" id="tb4_ns">/robot6</span>
-              <span id="tb4_connected" class="tb4-pill amber">CHECKING</span>
-            </div>
-          </div>
-
-          <div class="tb4-kv" style="margin-top:12px;">
-            <div class="tb4-k">마지막 수신</div>
-            <div class="tb4-v"><span id="tb4_last_seen" class="tb4-mono">-</span></div>
-
-            <div class="tb4-k">배터리</div>
-            <div class="tb4-v">
-              <div class="tb4-progress-wrap">
-                <div class="tb4-progress"><div id="tb4_batt_bar"></div></div>
-                <div style="min-width:70px; text-align:right;">
-                  <span id="tb4_batt_text" class="tb4-mono">0%</span>
-                </div>
-              </div>
-              <div style="margin-top:8px; font-size:12px; color:#6b7280;">
-                voltage: <span id="tb4_volt" class="tb4-mono">-</span> V,
-                current: <span id="tb4_curr" class="tb4-mono">-</span> A
-              </div>
-            </div>
-
-            <div class="tb4-k">Pose Frame</div>
-            <div class="tb4-v"><span id="tb4_pose_frame" class="tb4-mono">map</span></div>
-
-            <div class="tb4-k">위치 (x, y)</div>
-            <div class="tb4-v">
-              x=<span id="tb4_x" class="tb4-mono">0.00</span>,
-              y=<span id="tb4_y" class="tb4-mono">0.00</span>
-            </div>
-
-            <div class="tb4-k">Yaw</div>
-            <div class="tb4-v"><span id="tb4_yaw" class="tb4-mono">0.0</span> °</div>
-
-            <div class="tb4-k">속도 (v, w)</div>
-            <div class="tb4-v">
-              v=<span id="tb4_lin" class="tb4-mono">0.00</span> m/s,
-              w=<span id="tb4_ang" class="tb4-mono">0.00</span> rad/s
-            </div>
+      <!-- robot2 -->
+      <div class="tb4-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <h2 class="tb4-title" style="margin:0;">TB4 (/robot2)</h2>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="tb4-mono" id="tb4_2_ns">/robot2</span>
+            <span id="tb4_2_connected" class="tb4-pill amber">CHECKING</span>
           </div>
         </div>
 
-        <!-- RIGHT: Live log -->
-        <div class="tb4-card">
-          <h2 class="tb4-title">최근 이벤트</h2>
-          <div id="tb4_log" class="tb4-log"></div>
-          <div style="font-size:12px; color:#6b7280; margin-top:8px;">
-            * SSE 연결이 안 되면 로그가 비어있을 수 있어요. (폴링은 계속 동작)
+        <div class="tb4-kv" style="margin-top:12px;">
+          <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_2_last_seen" class="tb4-mono">-</span></div>
+
+          <div class="tb4-k">배터리</div>
+          <div class="tb4-v">
+            <div class="tb4-progress-wrap">
+              <div class="tb4-progress"><div id="tb4_2_batt_bar"></div></div>
+              <div style="min-width:70px; text-align:right;"><span id="tb4_2_batt_text" class="tb4-mono">0%</span></div>
+            </div>
+            <div style="margin-top:8px; font-size:12px; color:#6b7280;">
+              voltage: <span id="tb4_2_volt" class="tb4-mono">-</span> V,
+              current: <span id="tb4_2_curr" class="tb4-mono">-</span> A
+            </div>
           </div>
+
+          <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_2_pose_frame" class="tb4-mono">map</span></div>
+          <div class="tb4-k">위치 (x, y)</div>
+          <div class="tb4-v">x=<span id="tb4_2_x" class="tb4-mono">0.00</span>, y=<span id="tb4_2_y" class="tb4-mono">0.00</span></div>
+          <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_2_yaw" class="tb4-mono">0.0</span> °</div>
+          <div class="tb4-k">속도 (v, w)</div>
+          <div class="tb4-v">v=<span id="tb4_2_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_2_ang" class="tb4-mono">0.00</span> rad/s</div>
         </div>
 
+        <div style="margin-top:12px;">
+          <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
+          <div id="tb4_2_log" class="tb4-log"></div>
+        </div>
       </div>
     </section>
+
+    <section style="margin-top: 12px;">
+      <!-- robot6 -->
+      <div class="tb4-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <h2 class="tb4-title" style="margin:0;">TB4 (/robot6)</h2>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="tb4-mono" id="tb4_6_ns">/robot6</span>
+            <span id="tb4_6_connected" class="tb4-pill amber">CHECKING</span>
+          </div>
+        </div>
+
+        <div class="tb4-kv" style="margin-top:12px;">
+          <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_6_last_seen" class="tb4-mono">-</span></div>
+
+          <div class="tb4-k">배터리</div>
+          <div class="tb4-v">
+            <div class="tb4-progress-wrap">
+              <div class="tb4-progress"><div id="tb4_6_batt_bar"></div></div>
+              <div style="min-width:70px; text-align:right;"><span id="tb4_6_batt_text" class="tb4-mono">0%</span></div>
+            </div>
+            <div style="margin-top:8px; font-size:12px; color:#6b7280;">
+              voltage: <span id="tb4_6_volt" class="tb4-mono">-</span> V,
+              current: <span id="tb4_6_curr" class="tb4-mono">-</span> A
+            </div>
+          </div>
+
+          <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_6_pose_frame" class="tb4-mono">map</span></div>
+          <div class="tb4-k">위치 (x, y)</div>
+          <div class="tb4-v">x=<span id="tb4_6_x" class="tb4-mono">0.00</span>, y=<span id="tb4_6_y" class="tb4-mono">0.00</span></div>
+          <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_6_yaw" class="tb4-mono">0.0</span> °</div>
+          <div class="tb4-k">속도 (v, w)</div>
+          <div class="tb4-v">v=<span id="tb4_6_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_6_ang" class="tb4-mono">0.00</span> rad/s</div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
+          <div id="tb4_6_log" class="tb4-log"></div>
+        </div>
+      </div>
+    </section>
+
+    
 
 
 
@@ -643,39 +572,6 @@
 </script>
 
 <script>
-  function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }
-
-  async function refreshStatus(){
-
-    console.log('eaaergaergaerg')
-    try{
-      const res = await fetch("/api/status", {cache:"no-store"});
-      if(!res.ok) return;
-      const data = await res.json();
-
-      const a = clamp(data.robotA_battery);
-      const b = clamp(data.robotB_battery);
-
-      document.getElementById("robotA_bar").style.width = a + "%";
-      document.getElementById("robotA_text").textContent = a + "%";
-
-      document.getElementById("robotB_bar").style.width = b + "%";
-      document.getElementById("robotB_text").textContent = b + "%";
-
-      // 선택: 배터리 색 자동 변경
-      document.getElementById("robotA_bar").style.background = (a <= 20) ? "#ef4444" : "#22c55e";
-      document.getElementById("robotB_bar").style.background = (b <= 20) ? "#ef4444" : "#f59e0b";
-
-    }catch(e){}
-  }
-
-  refreshStatus(); // 첫 로드 즉시 갱신
-  setInterval(refreshStatus, 2000); // 2초마다 갱신
-</script>
-
-
-
-<script>
   // -----------------------------
   // TB4 helpers
   // -----------------------------
@@ -698,87 +594,93 @@
   }
 
   // -----------------------------
-  // Polling: /api/tb4_status
-  // -----------------------------
-  async function refreshTB4(){
-    try{
-      const res = await fetch("/api/tb4_status", {cache:"no-store"});
-      if(!res.ok) return;
-      const d = await res.json();
-
-      setText("tb4_ns", d.robot_ns ?? "/robot6");
-
-      // connected pill
-      const pill = document.getElementById("tb4_connected");
-      if(pill){
-        if(d.connected){
-          pill.textContent = "CONNECTED";
-          pill.className = "tb4-pill green";
-        }else{
-          pill.textContent = "DISCONNECTED";
-          pill.className = "tb4-pill red";
-        }
-      }
-
-      setText("tb4_last_seen", fmtTs(d.last_seen_ts));
-      setText("tb4_pose_frame", d.pose_frame ?? "map");
-
-      // battery
-      const batt = clamp(d.battery_percent ?? 0);
-      const bar = document.getElementById("tb4_batt_bar");
-      const text = document.getElementById("tb4_batt_text");
-      if(bar) bar.style.width = batt + "%";
-      if(text) text.textContent = batt + "%";
-
-      // color
-      if(bar){
-        bar.style.background = (batt <= 20) ? "#ef4444" : (batt <= 50) ? "#f59e0b" : "#22c55e";
-      }
-
-      setText("tb4_volt", toFixedMaybe(d.battery_voltage, 2));
-      setText("tb4_curr", toFixedMaybe(d.battery_current, 2));
-
-      setText("tb4_x", toFixedMaybe(d.x, 2));
-      setText("tb4_y", toFixedMaybe(d.y, 2));
-      setText("tb4_yaw", toFixedMaybe(d.yaw_deg, 1));
-      setText("tb4_lin", toFixedMaybe(d.lin_vel, 2));
-      setText("tb4_ang", toFixedMaybe(d.ang_vel, 2));
-
-    }catch(e){}
-  }
-
-  refreshTB4();
-  setInterval(refreshTB4, 500);
-
-  // -----------------------------
   // SSE: /tb4_events (선택)
   // -----------------------------
   const logEl = document.getElementById("tb4_log");
-  function pushLog(obj){
+
+  function pushLog(prefix, obj){
+    const logEl = document.getElementById(prefix+"_log");
     if(!logEl) return;
+
     const row = document.createElement("div");
     row.className = "row tb4-mono";
     const ts = obj.ts ? fmtTs(obj.ts) : "-";
     row.textContent = `[${ts}] ${obj.type || "event"} ` + JSON.stringify(obj);
     logEl.prepend(row);
 
-    // trim
     const rows = logEl.querySelectorAll(".row");
     if(rows.length > 60){
       for(let i=60; i<rows.length; i++) rows[i].remove();
     }
   }
 
-  try{
-    const es = new EventSource("/tb4_events");
-    es.addEventListener("tb4", (e) => {
-      const ev = JSON.parse(e.data);
-      pushLog(ev);
-    });
-    es.addEventListener("ping", () => {});
-    es.onerror = () => {};
-  }catch(e){}
+  try {
+      const es = new EventSource("/tb4_events");
+      es.addEventListener("tb4", (e) => {
+        const ev = JSON.parse(e.data);
+        const ns = ev.ns || "";
+        if(ns === "/robot6") pushLog("tb4_6", ev);
+        else if(ns === "/robot2") pushLog("tb4_2", ev);
+      });
+      es.addEventListener("ping", () => {});
+      es.onerror = () => {};
+  } catch(e){}
+
 </script>
+
+<script>
+  function clamp(n){ n = parseInt(n,10); return isNaN(n)?0:Math.max(0,Math.min(100,n)); }
+  function fmtTs(sec){ if(!sec || sec<=0) return "-"; return new Date(sec*1000).toLocaleString(); }
+  function setText(id, v){ const el=document.getElementById(id); if(el) el.textContent = (v??"-"); }
+  function toFixedMaybe(v,d){ if(v==null) return "-"; const f=Number(v); return isNaN(f)?String(v):f.toFixed(d); }
+
+  async function refreshTB4(ns, prefix){
+    try{
+      const res = await fetch(`/api/tb4_status?ns=${encodeURIComponent(ns)}`, {cache:"no-store"});
+      if(!res.ok) return;
+      const d = await res.json();
+
+      setText(prefix+"_ns", d.robot_ns ?? ns);
+
+      const pill = document.getElementById(prefix+"_connected");
+      if(pill){
+        if(d.connected){ pill.textContent="CONNECTED"; pill.className="tb4-pill green"; }
+        else { pill.textContent="DISCONNECTED"; pill.className="tb4-pill red"; }
+      }
+
+      setText(prefix+"_last_seen", fmtTs(d.last_seen_ts));
+      setText(prefix+"_pose_frame", d.pose_frame ?? "map");
+
+      const batt = clamp(d.battery_percent ?? 0);
+      const bar = document.getElementById(prefix+"_batt_bar");
+      const txt = document.getElementById(prefix+"_batt_text");
+      if(bar) bar.style.width = batt + "%";
+      if(txt) txt.textContent = batt + "%";
+      if(bar) bar.style.background = (batt<=20) ? "#ef4444" : (batt<=50) ? "#f59e0b" : "#22c55e";
+
+      setText(prefix+"_volt", toFixedMaybe(d.battery_voltage, 2));
+      setText(prefix+"_curr", toFixedMaybe(d.battery_current, 2));
+
+      setText(prefix+"_x", toFixedMaybe(d.x, 2));
+      setText(prefix+"_y", toFixedMaybe(d.y, 2));
+      setText(prefix+"_yaw", toFixedMaybe(d.yaw_deg, 1));
+      setText(prefix+"_lin", toFixedMaybe(d.lin_vel, 2));
+      setText(prefix+"_ang", toFixedMaybe(d.ang_vel, 2));
+    }catch(e){}
+  }
+
+  function startTB4Poll(){
+    refreshTB4("/robot6", "tb4_6");
+    refreshTB4("/robot2", "tb4_2");
+    setInterval(()=>{
+      refreshTB4("/robot6", "tb4_6");
+      refreshTB4("/robot2", "tb4_2");
+    }, 500);
+  }
+
+  startTB4Poll();
+</script>
+
 
 
 </html>

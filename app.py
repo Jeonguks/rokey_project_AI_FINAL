@@ -44,7 +44,8 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
 
-rt = RosRuntime("/robot6")
+
+rt = RosRuntime()
 rt.start()
 
 # ✅ 추가: 복귀 요청 API
@@ -126,11 +127,62 @@ def stop_cameras():
 
 # ros_tb4_bridge.start_ros_thread("/robot6")  
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# @app.route("/api/tb4_status")
+# def api_tb4_status():
+#     ns = request.args.get("ns", "/robot6")
+#     with ros_tb4_bridge._state_lock:
+#         st = dict(ros_tb4_bridge.get_state(ns))
+#     return jsonify(st)
+
+
+
 @app.route("/api/tb4_status")
 def api_tb4_status():
-    with ros_tb4_bridge._state_lock:
-        st = dict(ros_tb4_bridge.shared_state)
-    return jsonify(st)
+    # 코드 확인하기
+    ns = request.args.get("ns", "/robot6")
+
+    # ✅ lock timeout: 무한 대기 방지
+    if not ros_tb4_bridge._state_lock.acquire(timeout=0.3):
+        return jsonify({"ok": False, "error": "tb4 state lock timeout"}), 503
+    try:
+        # 멀티면 get_state(ns), 싱글이면 shared_state
+        if hasattr(ros_tb4_bridge, "get_state"):
+            st = dict(ros_tb4_bridge.get_state(ns))
+        else:
+            st = dict(ros_tb4_bridge.shared_state)
+        return jsonify(st)
+    finally:
+        ros_tb4_bridge._state_lock.release()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route("/tb4_events")
 def tb4_events():

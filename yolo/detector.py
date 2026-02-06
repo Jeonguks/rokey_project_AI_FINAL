@@ -149,7 +149,7 @@ class CameraWorker:
                 time.sleep(0.05)
                 continue
 
-            print(f"[cam] frame ok shape={frame.shape}")
+            # print(f"[cam] frame ok shape={frame.shape}")
 
 
             dets = self._run_yolo(frame)
@@ -164,7 +164,7 @@ class CameraWorker:
                 with self._lock:
                     self.latest_jpeg = buf.tobytes()
                     self.latest_meta = meta
-                    print(f"['cam] latest_jpeg updated size={len(self.latest_jpeg)}")
+                    # print(f"['cam] latest_jpeg updated size={len(self.latest_jpeg)}")
 
             else:
                 print(f"[{self.cam_key}] cv2.imencode failed")
