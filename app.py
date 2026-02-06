@@ -22,6 +22,9 @@ import ros_tb4_bridge
 from threading import Lock
 import json
 
+from ros_incident_subscriber import incident_state, _inc_lock
+
+
 
 from ros_runtime import RosRuntime
 
@@ -284,21 +287,19 @@ def dashboard():
     
     start_cameras() 
 
+    with _inc_lock:
+        st = dict(incident_state)
+
     # todo 로봇에서 데이터 연동 필요
-    robotA_battery = clamp_percent(0, 0)
-    robotB_battery = clamp_percent(0, 0)
-    incident_coord = "x=12.3, y=4.5"
-    incident_status = "화재 진압중"
-    incident_detail = "소화 작업 진행 중"
+    # robotA_battery = clamp_percent(0, 0)
+    # robotB_battery = clamp_percent(0, 0)
 
     return render_template(
         "dashboard.html",
         username=session["username"],
-        robotA_battery=robotA_battery,
-        robotB_battery=robotB_battery,
-        incident_coord=incident_coord,
-        incident_status=incident_status,
-        incident_detail=incident_detail,
+        robotA_battery=0,
+        robotB_battery=0,
+        incident_status=st["status"],
     )
 
 

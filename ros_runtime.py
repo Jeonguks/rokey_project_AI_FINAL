@@ -6,6 +6,8 @@ from rclpy.executors import MultiThreadedExecutor
 from ros_tb4_bridge import Turtlebot4Bridge
 from ros_fire_publisher import RosFirePublisher
 from ros_return_publisher import RosReturnPublisher
+from ros_incident_subscriber import RosIncidentSubscriber
+
 
 class RosRuntime:
     def __init__(self, robot_ns="/robot6"):
@@ -15,6 +17,7 @@ class RosRuntime:
         self.tb4 = None
         self.fire = None
         self.ret = None
+        self.incident = None
 
     def start(self):
         if self.thread and self.thread.is_alive():
@@ -29,10 +32,14 @@ class RosRuntime:
             self.tb4 = Turtlebot4Bridge(self.robot_ns)
             self.fire = RosFirePublisher()
             self.ret  = RosReturnPublisher()
+            self.incident = RosIncidentSubscriber("/incident_status")
+
 
             self.executor.add_node(self.tb4)
             self.executor.add_node(self.fire)
             self.executor.add_node(self.ret)
+            self.executor.add_node(self.incident)
+
 
             try:
                 self.executor.spin()
