@@ -7,6 +7,7 @@ from ros_tb4_bridge import Turtlebot4Bridge
 from ros_fire_publisher import RosFirePublisher
 from ros_return_publisher import RosReturnPublisher
 from ros_incident_subscriber import RosIncidentSubscriber
+from ros_tb4_video_bridge import Turtlebot4VideoBridge
 
 
 class RosRuntime:
@@ -36,6 +37,8 @@ class RosRuntime:
             self.ret  = RosReturnPublisher()
             self.inc_2 = RosIncidentSubscriber("/robot2")
             self.inc_6 = RosIncidentSubscriber("/robot6")
+            self.tb4_video_2 = Turtlebot4VideoBridge("/robot2", use_compressed=True)
+            self.tb4_video_6 = Turtlebot4VideoBridge("/robot6", use_compressed=True)
 
             # self.executor.add_node(self.tb4)
             self.executor.add_node(self.tb4_6)
@@ -44,7 +47,8 @@ class RosRuntime:
             self.executor.add_node(self.ret)
             self.executor.add_node(self.inc_2)
             self.executor.add_node(self.inc_6)
-
+            self.executor.add_node(self.tb4_video_2)
+            self.executor.add_node(self.tb4_video_6)
 
             try:
                 self.executor.spin()

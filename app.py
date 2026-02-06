@@ -23,10 +23,13 @@ from threading import Lock
 import json
 
 from ros_incident_subscriber import get_incident, _inc_lock
-from flask import request, jsonify
+from flask import request, Response, jsonify
 
 
 from ros_runtime import RosRuntime
+
+
+from ros_tb4_video_bridge import get_tb4_latest_jpeg
 
 try:
     import rclpy
@@ -47,6 +50,28 @@ app.secret_key = SECRET_KEY
 
 rt = RosRuntime()
 rt.start()
+
+
+
+@app.route("/tb4_video_feed")
+def tb4_video_feed():
+    ns = request.args.get("ns", "/robot2")
+
+    def gen():
+        while True:
+            jpeg, _ = get_tb4_latest_jpeg(ns)
+            if jpeg:
+                yield (b"--frame\r\n"
+                       b"Content-Type: image/jpeg\r\n"
+                       b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" +
+                       jpeg + b"\r\n")
+            else:
+                time.sleep(0.05)
+
+    return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+
 
 @app.route("/api/incident_status")
 def api_incident_status():
