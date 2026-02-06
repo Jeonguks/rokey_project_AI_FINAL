@@ -32,28 +32,31 @@ class RosRuntime:
             # self.tb4 = Turtlebot4Bridge(self.robot_ns)
             self.tb4_6 = Turtlebot4Bridge("/robot6")
             self.tb4_2 = Turtlebot4Bridge("/robot2")
-
             self.fire = RosFirePublisher()
             self.ret  = RosReturnPublisher()
-            self.incident = RosIncidentSubscriber("/incident_status")
+            self.inc_2 = RosIncidentSubscriber("/robot2")
+            self.inc_6 = RosIncidentSubscriber("/robot6")
 
             # self.executor.add_node(self.tb4)
             self.executor.add_node(self.tb4_6)
             self.executor.add_node(self.tb4_2)
             self.executor.add_node(self.fire)
             self.executor.add_node(self.ret)
-            self.executor.add_node(self.incident)
+            self.executor.add_node(self.inc_2)
+            self.executor.add_node(self.inc_6)
 
 
             try:
                 self.executor.spin()
             finally:
                 self.executor.shutdown()
-                # self.tb4.destroy_node()
                 self.tb4_6.destroy_node()
                 self.tb4_2.destroy_node()
                 self.fire.destroy_node()
                 self.ret.destroy_node()
+                self.inc_2.destroy_node()
+                self.inc_6.destroy_node()
+                
                 rclpy.shutdown()
 
         self.thread = threading.Thread(target=_spin, daemon=True)

@@ -22,8 +22,8 @@ import ros_tb4_bridge
 from threading import Lock
 import json
 
-from ros_incident_subscriber import incident_state, _inc_lock
-
+from ros_incident_subscriber import get_incident, _inc_lock
+from flask import request, jsonify
 
 
 from ros_runtime import RosRuntime
@@ -47,6 +47,15 @@ app.secret_key = SECRET_KEY
 
 rt = RosRuntime()
 rt.start()
+
+@app.route("/api/incident_status")
+def api_incident_status():
+    ns = request.args.get("ns", "/robot2")
+    with _inc_lock:
+        st = dict(get_incident(ns))
+    return jsonify(st)
+
+
 
 # ✅ 추가: 복귀 요청 API
 @app.post("/api/return_home")
@@ -336,22 +345,11 @@ def login():
 def dashboard():
     if "username" not in session:
         return redirect(url_for("login"))
-    
     start_cameras() 
-
-    with _inc_lock:
-        st = dict(incident_state)
-
-    # todo 로봇에서 데이터 연동 필요
-    # robotA_battery = clamp_percent(0, 0)
-    # robotB_battery = clamp_percent(0, 0)
 
     return render_template(
         "dashboard.html",
         username=session["username"],
-        robotA_battery=0,
-        robotB_battery=0,
-        incident_status=st["status"],
     )
 
 

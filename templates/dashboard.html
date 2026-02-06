@@ -394,35 +394,6 @@
   <!-- Middle + Bottom -->
   <main class="page">
 
-    <!-- ===============================
-         중간: 상황 + 로봇 출동 버튼
-    =============================== -->
-    <section class="middle">
-
-      <!-- 상황 발생 카드 -->
-      <div class="card ">
-        <div class="card-title">
-          상황 발생 <span class="subtle"></span>
-        </div>
-
-        <div class="kv">
-          <div class="k">좌표</div>
-          <div class="v">{{ incident_coord | default("N/A (예: x=12.3, y=4.5)") }}</div>
-
-          <div class="k">현재 상황</div>
-          <div class="v">
-            <!-- 예: 화재 진압중 / 진압 완료 / 사람 디텍션 -->
-            <span class="pill amber">{{ incident_status | default("사람 디텍션") }}</span>
-          </div>
-
-          <div class="k">세부</div>
-          <div class="v">{{ incident_detail | default("예: 화재 발생 지점 접근 중 / 연기 감지") }}</div>
-
-        </div>
-      </div>
-
-    </section>
-
     <section style="margin-top: 12px;">
       <!-- robot2 -->
       <div class="tb4-card">
@@ -436,6 +407,9 @@
 
         <div class="tb4-kv" style="margin-top:12px;">
           <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_2_last_seen" class="tb4-mono">-</span></div>
+
+          <div class="k">현재 상황 (/robot2)</div>
+          <div class="v"><span id="incident_robot2" class="pill amber">-</span></div>
 
           <div class="tb4-k">배터리</div>
           <div class="tb4-v">
@@ -477,6 +451,9 @@
 
         <div class="tb4-kv" style="margin-top:12px;">
           <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_6_last_seen" class="tb4-mono">-</span></div>
+
+          <div class="k">현재 상황 (/robot6)</div>
+          <div class="v"><span id="incident_robot6" class="pill amber">-</span></div>
 
           <div class="tb4-k">배터리</div>
           <div class="tb4-v">
@@ -679,6 +656,31 @@
   }
 
   startTB4Poll();
+</script>
+
+
+<script>
+  async function refreshIncident(ns, elId){
+    try{
+      const res = await fetch(`/api/incident_status?ns=${encodeURIComponent(ns)}`, {cache:"no-store"});
+      if(!res.ok) return;
+      const d = await res.json();
+      const el = document.getElementById(elId);
+      if(!el) return;
+      el.textContent = (d.status && String(d.status).trim()) ? d.status : "-";
+    }catch(e){}
+  }
+
+  function startIncidentPoll(){
+    refreshIncident("/robot2", "incident_robot2");
+    refreshIncident("/robot6", "incident_robot6");
+    setInterval(()=>{
+      refreshIncident("/robot2", "incident_robot2");
+      refreshIncident("/robot6", "incident_robot6");
+    }, 500);
+  }
+
+  startIncidentPoll();
 </script>
 
 
