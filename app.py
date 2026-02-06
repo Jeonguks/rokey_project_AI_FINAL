@@ -173,6 +173,15 @@ def api_alarm_stop():
     #fire_loop.stop_alarm(silence_sec=5)
     return jsonify(ok=True)
 
+# ✅ 화재 상태 API (screen.html이 폴링)
+@app.get("/api/fire/status")
+def api_fire_status():
+    snap = ros_tb4_bridge.get_state_snapshot()
+    return jsonify(
+        fire=bool(snap.get("fire_active", False)),
+        ts=float(snap.get("fire_last_ts", 0.0)),
+        payload=snap.get("fire_payload", None),
+    )
 
 # ==========================================================
 # ROS TB4 Status + Camera (ROS bridge)
@@ -323,6 +332,10 @@ def login():
 def logout():
     session.pop("username", None)
     return redirect(url_for("login"))
+
+@app.route("/screen")
+def screen():
+    return render_template("screen.html")
 
 
 @app.route("/dashboard")

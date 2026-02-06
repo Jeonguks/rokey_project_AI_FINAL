@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>화재발생</title>
+  <style>
+    :root {
+      --bg: #b00020;
+      --fg: #ffffff;
+      --shadow: rgba(0,0,0,0.35);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: radial-gradient(120% 120% at 50% 30%, #ff3b30 0%, var(--bg) 55%, #42000b 100%);
+      color: var(--fg);
+      overflow: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+    }
+
+    /* ===== 화재 레이어 ===== */
+    .wrap {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 6vmin;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .title {
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      line-height: 0.95;
+      font-size: clamp(48px, 12vw, 220px);
+      text-shadow: 0 10px 30px var(--shadow);
+      user-select: none;
+    }
+
+    .sub {
+      margin-top: 2vmin;
+      font-size: clamp(14px, 2.4vw, 32px);
+      opacity: 0.95;
+      user-select: none;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .title {
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.03); }
+      }
+    }
+
+    /* ===== 정상 레이어 ===== */
+    #safeLayer {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(120% 120% at 50% 30%, #1f2933 0%, #111827 80%);
+    }
+
+    .safeBox {
+      text-align: center;
+      padding: 24px 18px;
+      width: min(560px, 92vw);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .safeTitle {
+      font-size: clamp(20px, 4vw, 44px);
+      font-weight: 900;
+    }
+    .safeSub {
+      margin-top: 10px;
+      font-size: clamp(12px, 2vw, 18px);
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+    .safeHint {
+      margin-top: 14px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    #fireLayer {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ===== ARM 오버레이 ===== */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      display: none; /* 필요 시 표시 */
+      place-items: center;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(3px);
+      z-index: 9999;
+    }
+    .panel{
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 22px 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+    .panel h2 { margin: 0 0 10px; font-size: 20px; }
+    .panel p  { margin: 0 0 14px; opacity: 0.95; line-height: 1.4; }
+    .btn{
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 900;
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      background: #ffffff;
+      color: #111;
+    }
+    .hint{ margin-top: 10px; font-size: 13px; opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <!-- 정상 화면 -->
+  <div id="safeLayer">
+    <div class="safeBox">
+      <div class="safeTitle">정상 상태</div>
+      <div class="safeSub">감지된 이벤트가 없습니다</div>
+      <div class="safeHint">※ 소리 자동재생을 위해 화면을 1회 클릭(ARM)하면 이후 트리거에 자동 재생됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 화재 화면 -->
+  <div id="fireLayer">
+    <main class="wrap" role="alert" aria-live="assertive">
+      <div>
+        <div class="title">화재발생</div>
+        <div class="sub">즉시 대피 후 119에 신고하세요</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- mp3 -->
+  <audio id="alarmAudio" preload="auto" loop>
+    <source src="{{ url_for('static', filename='audio/fire_alert.mp3') }}" type="audio/mpeg">
+  </audio>
+
+  <!-- ARM 오버레이 (필요하면만 뜸) -->
+  <div class="overlay" id="overlay">
+    <div class="panel">
+      <h2>알람 준비</h2>
+      <p>브라우저 정책상 알람 음성은 최초 1회 사용자 동작(클릭/탭) 후 자동 재생이 가능합니다.</p>
+      <button class="btn" id="armBtn">알람 음성 활성화(ARM)</button>
+      <div class="hint">ARM 후에는 ROS 트리거에 자동 반응합니다.</div>
+    </div>
+  </div>
+
+<script>
+  const fireLayer = document.getElementById("fireLayer");
+  const safeLayer = document.getElementById("safeLayer");
+  const overlay  = document.getElementById("overlay");
+  const armBtn   = document.getElementById("armBtn");
+  const audioEl  = document.getElementById("alarmAudio");
+
+  let lastFire = null;
+  let armed = false;
+
+  function setUI(fire) {
+    // fireLayer는 center flex로 쓰는 게 맞음
+    fireLayer.style.display = fire ? "flex" : "none";
+    safeLayer.style.display = fire ? "none" : "grid";
+  }
+
+  async function armAudio() {
+    try {
+      // “한 번 재생→일시정지”로 권한 확보(ARM)
+      audioEl.volume = 0.0;
+      await audioEl.play();
+      audioEl.pause();
+      audioEl.currentTime = 0;
+      audioEl.volume = 1.0;
+
+      armed = true;
+      overlay.style.display = "none";
+    } catch (e) {
+      // 조용히 실패 처리: 오버레이만 유지
+      armed = false;
+      overlay.style.display = "grid";
+    }
+  }
+
+  // 버튼으로도 ARM 가능(유지)
+  armBtn.addEventListener("click", armAudio);
+
+  // ✅ 핵심: 페이지 아무데나 1회 클릭/터치하면 ARM
+  // pointerdown은 모바일/태블릿에서도 잘 잡힘
+  window.addEventListener("pointerdown", () => {
+    if (!armed) armAudio();
+  }, { once: true });
+
+  async function setAudio(fire) {
+    // 화재 시작 순간
+    if (fire && lastFire === false) {
+      if (!armed) {
+        overlay.style.display = "grid";
+        return;
+      }
+      try {
+        audioEl.currentTime = 0;
+        await audioEl.play(); // 🔥 실제 재생
+      } catch (e) {
+        armed = false;
+        overlay.style.display = "grid";
+      }
+    }
+
+    // 화재 종료 순간
+    if (!fire && lastFire === true) {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    }
+  }
+
+  async function poll() {
+    try {
+      const res = await fetch("/api/fire/status", { cache: "no-store" });
+      const data = await res.json();
+      const fire = !!data.fire;
+
+      // 최초 1회 동기화
+      if (lastFire === null) {
+        lastFire = fire;
+      }
+
+      setUI(fire);
+      await setAudio(fire);
+
+      // ✅ 상태 갱신 (필수)
+      lastFire = fire;
+
+    } catch (e) {
+      // 조용히 실패해도 계속 폴링
+    } finally {
+      setTimeout(poll, 300);
+    }
+  }
+
+  // 초기 화면
+  setUI(false);
+
+  // 처음엔 ARM 안내 오버레이를 띄워두는 게 UX상 가장 확실함
+  // (사용자 1회 터치만 하면 자동으로 꺼짐)
+  overlay.style.display = "grid";
+
+  poll();
+</script>
+
+</body>
+</html>
