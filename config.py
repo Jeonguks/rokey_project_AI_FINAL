@@ -10,12 +10,12 @@ CAM3 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:2:1.0-video-index0" #-> ../../vi
 
 # YOLO
 # YOLO_MODEL_PATH = "/home/rokey/rokey_ws/src/web_cam_detect/best.pt"
-YOLO_MODEL_PATH = "res/best_webcam_v8n.pt"
-YOLO_CONF_THRES = 0.3
+YOLO_MODEL_PATH = "res/best_web_v8n_param_add.pt"
+YOLO_CONF_THRES = 0.7
 YOLO_IMG_SZ = 640
 
 # fps 조정 목적
-FRAME_SLEEP = 3
+FRAME_SLEEP = 0.1
 
 # audio
 FIRE_ALARM_PATH = "res/fire_alarm.mp3"
@@ -25,5 +25,5 @@ ROS_ENABLED = False
 _ros_fire = None
 
 
-TB4_VIDEO_SLEEP_SEC = 0.05  # TB4 카메라 프레임 딜레이 조정용
+TB4_VIDEO_SLEEP_SEC = 0.1  # TB4 카메라 프레임 딜레이 조정용
 

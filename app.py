@@ -259,7 +259,7 @@ ev 예시:
 def on_detect(ev):
     print(f"[DETECTION] camera={ev['camera']} label={ev['label']}")
 
-    ev['label'] = 'fire' # test code
+    # ev['label'] = 'fire' # test code
 
     label = ev.get("label")
     if label == "fire":
