@@ -51,11 +51,6 @@ def get_state(ns: str):
         states[ns] = _new_state(ns)
     return states[ns]
 
-    # with _state_lock:
-        # if ns not in states:
-        #     states[ns] = _new_state(ns)
-        # return states[ns]
-
 def _clamp01(v: float) -> float:
     return 0.0 if v < 0.0 else 1.0 if v > 1.0 else v
 
@@ -134,10 +129,11 @@ class Turtlebot4Bridge(Node):
 
         self.get_logger().info(f"[TB4] Subscribing: {self.topic_battery}, {self.topic_amcl}, {self.topic_odom}")
         print(f"[TB4] Subscribing: {self.topic_battery}, {self.topic_amcl}, {self.topic_odom}")
-
+        
     def _on_battery(self, msg: BatteryState):
         _touch_connected(self.ns)
 
+        # ✅ 락 밖에서 계산
         p = msg.percentage
         percent = 0
         try:
@@ -146,18 +142,16 @@ class Turtlebot4Bridge(Node):
         except Exception:
             percent = 0
 
+        volt = float(msg.voltage) if msg.voltage == msg.voltage else None
+        curr = float(msg.current) if msg.current == msg.current else None
+
+        # ✅ 락 안에서는 대입만
         with _state_lock:
             st = get_state(self.ns)
             st["battery_percent"] = percent
-            st["battery_voltage"] = float(msg.voltage) if msg.voltage == msg.voltage else None
-            st["battery_current"] = float(msg.current) if msg.current == msg.current else None
+            st["battery_voltage"] = volt
+            st["battery_current"] = curr
 
-        event_bus.publish({
-            "ts": time.time(),
-            "ns": self.ns,
-            "type": "battery",
-            "battery_percent": percent,
-        })
 
     def _on_amcl(self, msg: PoseWithCovarianceStamped):
         _touch_connected(self.ns)

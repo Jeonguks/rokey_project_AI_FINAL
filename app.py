@@ -77,8 +77,8 @@ def tb4_video_feed():
 def api_incident_status():
     ns = request.args.get("ns", "/robot2")
     with _inc_lock:
-        st = dict(get_incident(ns))
-    return jsonify(st)
+        snapshot = dict(get_incident(ns))  #  복사
+    return jsonify(snapshot)               #  락 밖
 
 
 
@@ -164,55 +164,23 @@ def stop_cameras():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# @app.route("/api/tb4_status")
-# def api_tb4_status():
-#     ns = request.args.get("ns", "/robot6")
-#     with ros_tb4_bridge._state_lock:
-#         st = dict(ros_tb4_bridge.get_state(ns))
-#     return jsonify(st)
-
-
-
 @app.route("/api/tb4_status")
 def api_tb4_status():
-    # 코드 확인하기
     ns = request.args.get("ns", "/robot6")
 
-    # ✅ lock timeout: 무한 대기 방지
+    # ✅ lock timeout: 무한 대기 방지 + 락 최소화
     if not ros_tb4_bridge._state_lock.acquire(timeout=0.3):
         return jsonify({"ok": False, "error": "tb4 state lock timeout"}), 503
     try:
-        # 멀티면 get_state(ns), 싱글이면 shared_state
         if hasattr(ros_tb4_bridge, "get_state"):
-            st = dict(ros_tb4_bridge.get_state(ns))
+            snapshot = dict(ros_tb4_bridge.get_state(ns))   # ✅ 복사만
         else:
-            st = dict(ros_tb4_bridge.shared_state)
-        return jsonify(st)
+            snapshot = dict(ros_tb4_bridge.shared_state)    # legacy
     finally:
         ros_tb4_bridge._state_lock.release()
 
-
-
-
-
-
-
-
-
-
-
+    # ✅ 락 밖에서 처리(필요하면 여기서 계산/포맷/로그)
+    return jsonify(snapshot)
 
 
 
