@@ -65,8 +65,7 @@ def tb4_video_feed():
                        b"Content-Type: image/jpeg\r\n"
                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" +
                        jpeg + b"\r\n")
-            else:
-                time.sleep(0.05)
+            time.sleep(0.05)
 
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
@@ -470,5 +469,5 @@ def logout():
 
 if __name__ == "__main__":
     # use_reloader=False는 카메라 핸들 이슈 줄이는데 도움
-    app.run(debug=True, use_reloader=False, port=5167)
+    app.run(debug=True, use_reloader=False, port=5167, threaded=True)
 

@@ -23,3 +23,5 @@ FIRE_ALARM_PATH = "res/fire_alarm.mp3"
 
 ROS_ENABLED = False
 _ros_fire = None
+
+
