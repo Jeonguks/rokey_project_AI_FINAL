@@ -27,3 +27,34 @@ _ros_fire = None
 
 TB4_VIDEO_SLEEP_SEC = 0.1  # TB4 카메라 프레임 딜레이 조정용
 
+# 웹캠 디텍션 토픽명
+ROS_WEBCAM_DETECTED_TOPIC = "/webcam_detected"
+
+'''
+{
+    "class_a_detection": ["stand", "fire"],
+    "class_b_detection": ["fire"],
+    "class_c_detection": ["down"]
+}
+'''
+
+
+# 로봇 귀환 요청 토픽명
+ROS_RETURN_HOME_TOPIC = "/return_home_request" # 토픽 없음
+
+
+
+# 로봇 상황 보고 토픽명
+ROS_AMR_SITUATION_TOPIC = "/amr_situation"
+''' 
+{
+    "status": "화진 진압중"
+}
+''' 
+
+
+# <추가로 할것>
+# 웹에서 현재 상황 robot2,6 표시 되는지 확인
+# 복귀 명령 로봇에서 받기
+# 아이패드에 api 요청 보내기
+

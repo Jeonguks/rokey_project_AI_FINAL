@@ -2,6 +2,8 @@
 import time
 import json
 import threading
+from config import ROS_WEBCAM_DETECTED_TOPIC
+
 
 ROS_ENABLED = False
 try:
@@ -54,7 +56,7 @@ class RosFirePublisher(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
 
-        self.pub = self.create_publisher(String, "/webcam_detected", fire_qos)
+        self.pub = self.create_publisher(String, ROS_WEBCAM_DETECTED_TOPIC, fire_qos)
 
         self._last_pub_ts = 0.0
         self._debounce_sec = 1.0

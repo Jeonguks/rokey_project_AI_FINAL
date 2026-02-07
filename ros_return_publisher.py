@@ -1,6 +1,8 @@
 # ros_return_publisher.py
 import threading
 
+from config import ROS_RETURN_HOME_TOPIC
+
 ROS_ENABLED = False
 
 try:
@@ -26,9 +28,9 @@ class RosReturnPublisher(Node):
             durability=DurabilityPolicy.VOLATILE,  # 버튼 클릭 이벤트는 보통 volatile로 충분
         )
 
-        self.pub = self.create_publisher(Empty, "/return_home_request", qos)
+        self.pub = self.create_publisher(Empty, ROS_RETURN_HOME_TOPIC, qos)
 
     def publish_request(self):
         self.pub.publish(Empty())
-        self.get_logger().info("Published /return_home_request")
+        self.get_logger().info(f"Published {ROS_RETURN_HOME_TOPIC}")
 

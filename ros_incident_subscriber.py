@@ -7,6 +7,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from config import ROS_AMR_SITUATION_TOPIC
+
 
 _inc_lock = threading.RLock()
 
@@ -43,7 +45,7 @@ class RosIncidentSubscriber(Node):
       1) JSON: {"status": "화재 진압중"}  -> status만 뽑음
       2) Plain text: "화재 진압중"        -> 그대로 status로 사용
     """
-    def __init__(self, ns: str, topic_suffix: str = "incident_status"):
+    def __init__(self, ns: str, topic_suffix: str = ROS_AMR_SITUATION_TOPIC):
         self.ns = norm_ns(ns)
         node_name = f"incident_sub_{self.ns.strip('/').replace('/', '_')}"
         super().__init__(node_name)
