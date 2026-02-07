@@ -58,15 +58,21 @@ def tb4_video_feed():
     ns = request.args.get("ns", "/robot2")
 
     def gen():
+        last_ts = 0.0
+
         while True:
-            jpeg, _ = get_tb4_latest_jpeg(ns)
-            if jpeg:
+            jpeg, ts = get_tb4_latest_jpeg(ns)
+
+            #  새 프레임일 때만 전송(중복 전송 방지)
+            if jpeg and ts > last_ts:
+                last_ts = ts
                 yield (b"--frame\r\n"
                        b"Content-Type: image/jpeg\r\n"
                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" +
                        jpeg + b"\r\n")
-            else:
-                time.sleep(0.05)
+
+            #  busy-loop 방지(대략 30fps)
+            time.sleep(TB4_VIDEO_SLEEP_SEC if 'TB4_VIDEO_SLEEP_SEC' in globals() else 0.03)
 
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
@@ -470,5 +476,5 @@ def logout():
 
 if __name__ == "__main__":
     # use_reloader=False는 카메라 핸들 이슈 줄이는데 도움
-    app.run(debug=True, use_reloader=False, port=5167)
+    app.run(debug=True, use_reloader=False, port=5167, threaded=True)
 

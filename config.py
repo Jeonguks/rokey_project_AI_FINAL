@@ -23,3 +23,7 @@ FIRE_ALARM_PATH = "res/fire_alarm.mp3"
 
 ROS_ENABLED = False
 _ros_fire = None
+
+
+TB4_VIDEO_SLEEP_SEC = 0.05  # TB4 카메라 프레임 딜레이 조정용
+

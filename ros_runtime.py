@@ -9,6 +9,8 @@ from ros_return_publisher import RosReturnPublisher
 from ros_incident_subscriber import RosIncidentSubscriber
 from ros_tb4_video_bridge import Turtlebot4VideoBridge
 
+import time
+
 
 class RosRuntime:
     def __init__(self, robot_ns="/robot6"):
@@ -51,7 +53,10 @@ class RosRuntime:
             self.executor.add_node(self.tb4_video_6)
 
             try:
-                self.executor.spin()
+                # self.executor.spin()
+                while rclpy.ok():
+                    self.executor.spin_once(timeout_sec=0.05)
+                    time.sleep(0.001)
             finally:
                 self.executor.shutdown()
                 self.tb4_6.destroy_node()
