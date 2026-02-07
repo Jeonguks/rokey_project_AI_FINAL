@@ -70,6 +70,7 @@ def tb4_video_feed():
                        b"Content-Type: image/jpeg\r\n"
                        b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n" +
                        jpeg + b"\r\n")
+            time.sleep(0.05)
 
             #  busy-loop 방지(대략 30fps)
             time.sleep(TB4_VIDEO_SLEEP_SEC if 'TB4_VIDEO_SLEEP_SEC' in globals() else 0.03)

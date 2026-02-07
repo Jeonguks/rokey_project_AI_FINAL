@@ -82,9 +82,13 @@ class CameraWorker:
         self.thread.start()
 
     def stop(self):
+        print(f"[cam] stop() called")
         self._stop_evt.set()
         if self.thread:
             self.thread.join(timeout=2.0)
+        if self.cap and self.cap.isOpened():
+            self.cap.release()
+        
 
     def get_latest_jpeg(self):
         with self._lock:

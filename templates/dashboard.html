@@ -6,6 +6,38 @@
   <title>Dashboard</title>
 
   <style>
+    /* Video Slider Controls */
+    .video-switchbar {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: #111;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      box-sizing: border-box;
+    }
+    .video-switchbar .switch-btn {
+      padding: 10px 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .video-switchbar .switch-btn.active {
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+    }
+    .video-switchbar .hint {
+      margin-left: auto;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     /* TB4 2개 가로 배치 */
     .tb4-video-wrapper {
       width: 100%;
@@ -376,159 +408,158 @@
     </div>
   </header>
 
-  <!-- Top: Videos -->
-  <section class="top-video-wrapper">
-    <div class="video-container">
+  <!-- Video Slider Switch (Ping reduction: only one group streams at a time) -->
+  <div class="video-switchbar">
+    <button id="btnSlider1" class="switch-btn active" type="button">슬라이더1 (Camera 1~3)</button>
+    <button id="btnSlider2" class="switch-btn" type="button">슬라이더2 (TB4 /robot2, /robot6)</button>
+    <div class="hint">※ 동시에 여러 MJPEG 스트리밍을 켜면 ping이 증가합니다</div>
+  </div>
 
-      <!-- Camera 1 -->
+
+
+  <!-- Slider 1: USB Cameras (default) -->
+  <section id="slider1" class="top-video-wrapper">
+    <div class="video-container">
       <div class="video-card">
         <div class="video-stage">
-          <img src="/video_feed1">
-          <!-- <img src="{{ url_for('video_feed1') }}" alt="Camera 1"> -->
+          <img id="cam1Img" src="/video_feed1" data-src="/video_feed1">
         </div>
         <div class="camera-label">Camera 1</div>
       </div>
 
-      <!-- Camera 2 -->
       <div class="video-card">
         <div class="video-stage">
-          <img src="/video_feed2">
-          <!-- <img src="{{ url_for('video_feed2') }}" alt="Camera 2"> -->
+          <img id="cam2Img" src="/video_feed2" data-src="/video_feed2">
         </div>
         <div class="camera-label">Camera 2</div>
       </div>
 
-      <!-- Camera 3 -->
       <div class="video-card">
         <div class="video-stage">
-          <img src="/video_feed3">
-          <!-- <img src="{{ url_for('video_feed3') }}" alt="Camera 3"> -->
+          <img id="cam3Img" src="/video_feed3" data-src="/video_feed3">
         </div>
         <div class="camera-label">Camera 3</div>
       </div>
-
     </div>
   </section>
 
-  <!-- Middle + Bottom -->
-  <main class="page">
-    <section class="tb4-video-wrapper">
-      <div class="tb4-video-container">
-        <div class="video-card">
-          <div class="video-stage">
-            <img src="/tb4_video_feed?ns=/robot2" />
-          </div>
-          <div class="camera-label">TB4 (/robot2) Camera</div>
-        </div>
+  <!-- Slider 2: TB4 Cameras (initially off to reduce ping) -->
+  <section id="slider2" class="tb4-video-wrapper" style="display:none;">
+  <div class="tb4-video-container">
+    <div class="video-card">
+      <div class="video-stage">
+        <img id="tb4Cam2Img" src="" data-src="/tb4_video_feed?ns=/robot2" />
+      </div>
+      <div class="camera-label">TB4 (/robot2) Camera</div>
+    </div>
 
-        <div class="video-card">
-          <div class="video-stage">
-            <img src="/tb4_video_feed?ns=/robot6" />
-          </div>
-          <div class="camera-label">TB4 (/robot6) Camera</div>
+    <div class="video-card">
+      <div class="video-stage">
+        <img id="tb4Cam6Img" src="" data-src="/tb4_video_feed?ns=/robot6" />
+      </div>
+      <div class="camera-label">TB4 (/robot6) Camera</div>
+    </div>
+  </div>
+  </section>
+
+  <section style="margin-top: 12px;">
+    <!-- robot2 -->
+    <div class="tb4-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h2 class="tb4-title" style="margin:0;">TB4 (/robot2)</h2>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="tb4-mono" id="tb4_2_ns">/robot2</span>
+          <span id="tb4_2_connected" class="tb4-pill amber">CHECKING</span>
         </div>
       </div>
-    </section>
 
-    <section style="margin-top: 12px;">
-      <!-- robot2 -->
-      <div class="tb4-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-          <h2 class="tb4-title" style="margin:0;">TB4 (/robot2)</h2>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="tb4-mono" id="tb4_2_ns">/robot2</span>
-            <span id="tb4_2_connected" class="tb4-pill amber">CHECKING</span>
+      <div class="tb4-kv" style="margin-top:12px;">
+        <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_2_last_seen" class="tb4-mono">-</span></div>
+
+        <div class="k">현재 상황 (/robot2)</div>
+        <div class="v"><span id="incident_robot2" class="pill amber">-</span></div>
+
+        <div class="tb4-k">배터리</div>
+        <div class="tb4-v">
+          <div class="tb4-progress-wrap">
+            <div class="tb4-progress"><div id="tb4_2_batt_bar"></div></div>
+            <div style="min-width:70px; text-align:right;"><span id="tb4_2_batt_text" class="tb4-mono">0%</span></div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; color:#6b7280;">
+            voltage: <span id="tb4_2_volt" class="tb4-mono">-</span> V,
+            current: <span id="tb4_2_curr" class="tb4-mono">-</span> A
           </div>
         </div>
 
-        <div class="tb4-kv" style="margin-top:12px;">
-          <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_2_last_seen" class="tb4-mono">-</span></div>
+        <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_2_pose_frame" class="tb4-mono">map</span></div>
+        <div class="tb4-k">위치 (x, y)</div>
+        <div class="tb4-v">x=<span id="tb4_2_x" class="tb4-mono">0.00</span>, y=<span id="tb4_2_y" class="tb4-mono">0.00</span></div>
+        <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_2_yaw" class="tb4-mono">0.0</span> °</div>
+        <div class="tb4-k">속도 (v, w)</div>
+        <div class="tb4-v">v=<span id="tb4_2_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_2_ang" class="tb4-mono">0.00</span> rad/s</div>
+      </div>
 
-          <div class="k">현재 상황 (/robot2)</div>
-          <div class="v"><span id="incident_robot2" class="pill amber">-</span></div>
+      <div style="margin-top:12px;">
+        <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
+        <div id="tb4_2_log" class="tb4-log"></div>
+      </div>
+    </div>
+  </section>
 
-          <div class="tb4-k">배터리</div>
-          <div class="tb4-v">
-            <div class="tb4-progress-wrap">
-              <div class="tb4-progress"><div id="tb4_2_batt_bar"></div></div>
-              <div style="min-width:70px; text-align:right;"><span id="tb4_2_batt_text" class="tb4-mono">0%</span></div>
-            </div>
-            <div style="margin-top:8px; font-size:12px; color:#6b7280;">
-              voltage: <span id="tb4_2_volt" class="tb4-mono">-</span> V,
-              current: <span id="tb4_2_curr" class="tb4-mono">-</span> A
-            </div>
-          </div>
-
-          <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_2_pose_frame" class="tb4-mono">map</span></div>
-          <div class="tb4-k">위치 (x, y)</div>
-          <div class="tb4-v">x=<span id="tb4_2_x" class="tb4-mono">0.00</span>, y=<span id="tb4_2_y" class="tb4-mono">0.00</span></div>
-          <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_2_yaw" class="tb4-mono">0.0</span> °</div>
-          <div class="tb4-k">속도 (v, w)</div>
-          <div class="tb4-v">v=<span id="tb4_2_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_2_ang" class="tb4-mono">0.00</span> rad/s</div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
-          <div id="tb4_2_log" class="tb4-log"></div>
+  <section style="margin-top: 12px;">
+    <!-- robot6 -->
+    <div class="tb4-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h2 class="tb4-title" style="margin:0;">TB4 (/robot6)</h2>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="tb4-mono" id="tb4_6_ns">/robot6</span>
+          <span id="tb4_6_connected" class="tb4-pill amber">CHECKING</span>
         </div>
       </div>
-    </section>
 
-    <section style="margin-top: 12px;">
-      <!-- robot6 -->
-      <div class="tb4-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-          <h2 class="tb4-title" style="margin:0;">TB4 (/robot6)</h2>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="tb4-mono" id="tb4_6_ns">/robot6</span>
-            <span id="tb4_6_connected" class="tb4-pill amber">CHECKING</span>
+      <div class="tb4-kv" style="margin-top:12px;">
+        <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_6_last_seen" class="tb4-mono">-</span></div>
+
+        <div class="k">현재 상황 (/robot6)</div>
+        <div class="v"><span id="incident_robot6" class="pill amber">-</span></div>
+
+        <div class="tb4-k">배터리</div>
+        <div class="tb4-v">
+          <div class="tb4-progress-wrap">
+            <div class="tb4-progress"><div id="tb4_6_batt_bar"></div></div>
+            <div style="min-width:70px; text-align:right;"><span id="tb4_6_batt_text" class="tb4-mono">0%</span></div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; color:#6b7280;">
+            voltage: <span id="tb4_6_volt" class="tb4-mono">-</span> V,
+            current: <span id="tb4_6_curr" class="tb4-mono">-</span> A
           </div>
         </div>
 
-        <div class="tb4-kv" style="margin-top:12px;">
-          <div class="tb4-k">마지막 수신</div><div class="tb4-v"><span id="tb4_6_last_seen" class="tb4-mono">-</span></div>
-
-          <div class="k">현재 상황 (/robot6)</div>
-          <div class="v"><span id="incident_robot6" class="pill amber">-</span></div>
-
-          <div class="tb4-k">배터리</div>
-          <div class="tb4-v">
-            <div class="tb4-progress-wrap">
-              <div class="tb4-progress"><div id="tb4_6_batt_bar"></div></div>
-              <div style="min-width:70px; text-align:right;"><span id="tb4_6_batt_text" class="tb4-mono">0%</span></div>
-            </div>
-            <div style="margin-top:8px; font-size:12px; color:#6b7280;">
-              voltage: <span id="tb4_6_volt" class="tb4-mono">-</span> V,
-              current: <span id="tb4_6_curr" class="tb4-mono">-</span> A
-            </div>
-          </div>
-
-          <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_6_pose_frame" class="tb4-mono">map</span></div>
-          <div class="tb4-k">위치 (x, y)</div>
-          <div class="tb4-v">x=<span id="tb4_6_x" class="tb4-mono">0.00</span>, y=<span id="tb4_6_y" class="tb4-mono">0.00</span></div>
-          <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_6_yaw" class="tb4-mono">0.0</span> °</div>
-          <div class="tb4-k">속도 (v, w)</div>
-          <div class="tb4-v">v=<span id="tb4_6_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_6_ang" class="tb4-mono">0.00</span> rad/s</div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
-          <div id="tb4_6_log" class="tb4-log"></div>
-        </div>
+        <div class="tb4-k">Pose Frame</div><div class="tb4-v"><span id="tb4_6_pose_frame" class="tb4-mono">map</span></div>
+        <div class="tb4-k">위치 (x, y)</div>
+        <div class="tb4-v">x=<span id="tb4_6_x" class="tb4-mono">0.00</span>, y=<span id="tb4_6_y" class="tb4-mono">0.00</span></div>
+        <div class="tb4-k">Yaw</div><div class="tb4-v"><span id="tb4_6_yaw" class="tb4-mono">0.0</span> °</div>
+        <div class="tb4-k">속도 (v, w)</div>
+        <div class="tb4-v">v=<span id="tb4_6_lin" class="tb4-mono">0.00</span> m/s, w=<span id="tb4_6_ang" class="tb4-mono">0.00</span> rad/s</div>
       </div>
-    </section>
+
+      <div style="margin-top:12px;">
+        <div class="tb4-title" style="font-size:14px; margin-bottom:8px;">최근 이벤트</div>
+        <div id="tb4_6_log" class="tb4-log"></div>
+      </div>
+    </div>
+  </section>
 
     
 
 
 
-    <!-- ✅ 하단 고정 액션 바 -->
-    <div class="bottom-action-bar">
-      <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
-      <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
-    </div>
+  <!-- ✅ 하단 고정 액션 바 -->
+  <div class="bottom-action-bar">
+    <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
+    <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
+  </div>
 
-  </main>
 
   
   <div id="snackbar" style="
@@ -718,6 +749,79 @@
 
   startIncidentPoll();
 </script>
+
+<script>
+  // Video Slider Switch
+  const slider1 = document.getElementById("slider1");
+  const slider2 = document.getElementById("slider2");
+  const btn1 = document.getElementById("btnSlider1");
+  const btn2 = document.getElementById("btnSlider2");
+
+  function stopStreamImg(imgEl){
+    if(!imgEl) return;
+    // MJPEG 스트림 연결 해제: src 제거
+    imgEl.src = "";
+  }
+
+  function startStreamImg(imgEl){
+    if(!imgEl) return;
+    const s = imgEl.getAttribute("data-src");
+    if(!s) return;
+
+    // 동일 src 재설정 시 브라우저가 재연결 안 할 때가 있어 강제 리셋
+    if(imgEl.src && imgEl.src.endsWith(s)) {
+      imgEl.src = "";
+      setTimeout(()=>{ imgEl.src = s; }, 0);
+    } else {
+      imgEl.src = s;
+    }
+  }
+
+  function setActiveButton(active){
+    if(!btn1 || !btn2) return;
+    btn1.classList.toggle("active", active === 1);
+    btn2.classList.toggle("active", active === 2);
+  }
+
+  function activateSlider1(){
+    // 전환 전(슬라이더2) 송출 중지
+    stopStreamImg(document.getElementById("tb4Cam2Img"));
+    stopStreamImg(document.getElementById("tb4Cam6Img"));
+
+    // UI 전환
+    if(slider2) slider2.style.display = "none";
+    if(slider1) slider1.style.display = "block";
+    setActiveButton(1);
+
+    // 전환 후(슬라이더1) 송출 시작
+    startStreamImg(document.getElementById("cam1Img"));
+    startStreamImg(document.getElementById("cam2Img"));
+    startStreamImg(document.getElementById("cam3Img"));
+  }
+
+  function activateSlider2(){
+    // 전환 전(슬라이더1) 송출 중지
+    stopStreamImg(document.getElementById("cam1Img"));
+    stopStreamImg(document.getElementById("cam2Img"));
+    stopStreamImg(document.getElementById("cam3Img"));
+
+    // UI 전환
+    if(slider1) slider1.style.display = "none";
+    if(slider2) slider2.style.display = "block";
+    setActiveButton(2);
+
+    // 전환 후(슬라이더2) 송출 시작
+    startStreamImg(document.getElementById("tb4Cam2Img"));
+    startStreamImg(document.getElementById("tb4Cam6Img"));
+  }
+
+  if(btn1) btn1.addEventListener("click", activateSlider1);
+  if(btn2) btn2.addEventListener("click", activateSlider2);
+
+  // 초기 화면: 슬라이더1 (Camera 1~3)
+  activateSlider1();
+</script>
+
 
 
 

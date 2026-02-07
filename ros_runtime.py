@@ -58,14 +58,13 @@ class RosRuntime:
                     self.executor.spin_once(timeout_sec=0.05)
                     time.sleep(0.001)
             finally:
-                self.executor.shutdown()
                 self.tb4_6.destroy_node()
                 self.tb4_2.destroy_node()
                 self.fire.destroy_node()
                 self.ret.destroy_node()
                 self.inc_2.destroy_node()
                 self.inc_6.destroy_node()
-                
+                self.executor.shutdown()
                 rclpy.shutdown()
 
         self.thread = threading.Thread(target=_spin, daemon=True)
