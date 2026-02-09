@@ -262,10 +262,11 @@ def on_detect(ev):
     # ev['label'] = 'fire' # test code
 
     label = ev.get("label")
+    rt.fire.publish_fire(ev)
+
     if label == "fire":
         fire_loop.notify_fire()
         # ros_fire_runner.publish_fire(ev)
-        rt.fire.publish_fire(ev)
   
 
 # 캠 워커 활성화 > 
