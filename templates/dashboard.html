@@ -557,8 +557,54 @@
   <div class="bottom-action-bar">
     <button class="btn btn-outline" onclick="stopAlarm()">경보 종료</button>
     <button id="btnReturnHome" class="btn btn-warning" type="button">복귀 요청</button>
+    <button id="btnOpenDb" class="btn btn-outline" type="button">상태 로그</button>
   </div>
 
+
+
+
+  <dialog id="dbDialog" style="width:min(1100px, 96vw); border:none; border-radius:12px; padding:0;">
+    <div style="padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; background:#1f2933; color:#fff;">
+      <div style="font-weight:900;">Robot Status Log (mydatabase.db)</div>
+      <div style="display:flex; gap:8px;">
+        <select id="dbNs" style="height:34px; border-radius:8px; padding:0 10px; border:1px solid #334155;">
+          <option value="">ALL</option>
+          <option value="/robot2">/robot2</option>
+          <option value="/robot6">/robot6</option>
+        </select>
+        <button id="btnReloadDb" class="btn btn-outline" style="height:34px; padding:0 12px;">새로고침</button>
+        <button id="btnClearDb" class="btn btn-outline" style="height:34px; padding:0 12px;">비우기</button>
+        <button id="btnCloseDb" class="btn btn-outline" style="height:34px; padding:0 12px;">닫기</button>
+      </div>
+    </div>
+
+    <div style="padding:12px 14px;">
+      <div style="overflow:auto; max-height:70vh; border:1px solid #e5e7eb; border-radius:10px;">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead style="position:sticky; top:0; background:#f9fafb; z-index:1;">
+            <tr>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">ts</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">ns</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">connected</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">battery%</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">volt</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">curr</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">x</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">y</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">yaw</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">v</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">w</th>
+              <th style="text-align:left; padding:8px; border-bottom:1px solid #e5e7eb;">incident</th>
+            </tr>
+          </thead>
+          <tbody id="dbTbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px; color:#6b7280; font-size:12px;">
+        * 조회는 최신 200개 기본(서버에서 limit 적용). 저장은 /api/tb4_status 호출 시 2초 간격 throttle.
+      </div>
+    </div>
+  </dialog>
 
   
   <div id="snackbar" style="
@@ -575,6 +621,89 @@
   </div>
 
 </body>
+
+<script>
+  function fmtTsMillis(sec){
+    if(!sec || sec <= 0) return "-";
+    return new Date(sec * 1000).toLocaleString();
+  }
+  function n2(v, d=2){
+    if(v === null || v === undefined) return "-";
+    const f = Number(v);
+    return isNaN(f) ? String(v) : f.toFixed(d);
+  }
+
+  async function loadDbRows(){
+    const tbody = document.getElementById("dbTbody");
+    const ns = document.getElementById("dbNs")?.value || "";
+    if(!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="12" style="padding:10px;">loading...</td></tr>`;
+    try{
+      const q = new URLSearchParams();
+      q.set("limit", "200");
+      if(ns) q.set("ns", ns);
+
+      const res = await fetch(`/api/db/robot_status?${q.toString()}`, {cache:"no-store"});
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error("load failed");
+
+      const rows = data.rows || [];
+      if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="12" style="padding:10px;">no data</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => {
+        return `
+          <tr>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${fmtTsMillis(r.ts)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9; font-family:ui-monospace;">${r.robot_ns ?? "-"}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${r.connected ? "Y" : "N"}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${r.battery_percent ?? 0}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.battery_voltage,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.battery_current,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.x,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.y,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.yaw_deg,1)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.lin_vel,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${n2(r.ang_vel,2)}</td>
+            <td style="padding:8px; border-bottom:1px solid #f1f5f9;">${(r.incident_status ?? "-")}</td>
+          </tr>
+        `;
+      }).join("");
+    }catch(e){
+      tbody.innerHTML = `<tr><td colspan="12" style="padding:10px;">error</td></tr>`;
+    }
+  }
+
+  document.getElementById("btnOpenDb")?.addEventListener("click", async () => {
+    const dlg = document.getElementById("dbDialog");
+    if(!dlg) return;
+    dlg.showModal();
+    await loadDbRows();
+  });
+  document.getElementById("btnCloseDb")?.addEventListener("click", () => {
+    document.getElementById("dbDialog")?.close();
+  });
+  document.getElementById("btnReloadDb")?.addEventListener("click", loadDbRows);
+  document.getElementById("dbNs")?.addEventListener("change", loadDbRows);
+
+  document.getElementById("btnClearDb")?.addEventListener("click", async () => {
+    if(!confirm("DB 로그를 비울까요?")) return;
+    try{
+      const res = await fetch("/api/db/robot_status/clear", {method:"POST"});
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error();
+      await loadDbRows();
+      // 있으면 기존 snackbar 사용
+      try { showSnackbar("DB 로그 비움 완료"); } catch(e){}
+    }catch(e){
+      alert("DB 비우기 실패");
+    }
+  });
+</script>
+
 
 <script>
   // ✅ 추가: 복귀 요청 API 호출

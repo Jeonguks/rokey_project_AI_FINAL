@@ -1,0 +1,38 @@
+
+
+{
+    "/robot2": {
+        "robot_ns": "robot2",
+        "connected": false,
+        "last_seen_ts": 0.0,
+
+        "battery_percent": 0,
+        "battery_voltage": 0,
+        "battery_current": 0,
+
+        "pose_frame": "map",
+        "x": 0.0,
+        "y": 0.0,
+        "yaw_deg": 0.0,
+
+        "lin_vel": 0.0,
+        "ang_vel": 0.0
+    },
+    "/robot6": {
+        "robot_ns": "robot6",
+        "connected": false,
+        "last_seen_ts": 0.0,
+
+        "battery_percent": 0,
+        "battery_voltage": 0,
+        "battery_current": 0,
+
+        "pose_frame": "map",
+        "x": 0.0,
+        "y": 0.0,
+        "yaw_deg": 0.0,
+
+        "lin_vel": 0.0,
+        "ang_vel": 0.0
+    }
+}

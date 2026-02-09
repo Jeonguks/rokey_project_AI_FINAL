@@ -43,6 +43,9 @@ except Exception as e:
 
 
 
+import db_store
+
+
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
@@ -50,6 +53,29 @@ app.secret_key = SECRET_KEY
 
 rt = RosRuntime()
 rt.start()
+
+db_store.init_db()
+
+
+
+@app.get("/api/db/robot_status")
+def api_db_robot_status():
+    ns = request.args.get("ns")  # optional
+    limit = request.args.get("limit", "200")
+    try:
+        limit_n = int(limit)
+    except Exception:
+        limit_n = 200
+
+    rows = db_store.fetch_robot_status(ns=ns, limit=limit_n)
+    return jsonify({"ok": True, "rows": rows})
+
+
+@app.post("/api/db/robot_status/clear")
+def api_db_robot_status_clear():
+    db_store.clear_robot_status()
+    return jsonify({"ok": True})
+
 
 
 
@@ -112,9 +138,6 @@ def api_return_home():
 
 
 
-# Hardcoded user credentials for demonstration
-USERNAME = "user"
-PASSWORD = "password"
 
 
 # 페이지 전환시 카메라 안돌게 
@@ -185,6 +208,9 @@ def api_tb4_status():
             snapshot = dict(ros_tb4_bridge.shared_state)    # legacy
     finally:
         ros_tb4_bridge._state_lock.release()
+
+
+    db_store.save_status_snapshot(ns, st, inc)
 
     # ✅ 락 밖에서 처리(필요하면 여기서 계산/포맷/로그)
     return jsonify(snapshot)

@@ -1,6 +1,11 @@
 # Flask
 SECRET_KEY = "your_secret_key"
 
+# Hardcoded user credentials for demonstration
+USERNAME = "user"
+PASSWORD = "password"
+
+
 # Camera paths
 # CAM0 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:6:1.0-video-index0" #-> ../../video0 내장 카메라
 CAM1 = "/dev/v4l/by-path/pci-0000:00:14.0-usb-0:1:1.0-video-index0" #-> ../../video7 1번포트
